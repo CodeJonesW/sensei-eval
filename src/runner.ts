@@ -75,7 +75,12 @@ export class EvalRunner {
     }
 
     const overallScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
-    const passed = scores.every((s) => s.passed);
+    const optionalNames = new Set(
+      applicable.filter((c) => c.optional).map((c) => c.name),
+    );
+    const passed = scores
+      .filter((s) => !optionalNames.has(s.criterion))
+      .every((s) => s.passed);
 
     return {
       overallScore,

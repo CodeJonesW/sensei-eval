@@ -132,6 +132,7 @@ export const engagement = {
     method: 'llm_judge',
     threshold: 0.5,
     weight: 1.0,
+    optional: true,
     async evaluate(input, judge) {
         if (!judge)
             throw new Error('Judge required for engagement criterion');
@@ -165,6 +166,7 @@ export const repetitionAvoidance = {
     method: 'llm_judge',
     threshold: 0.5,
     weight: 1.0,
+    optional: true,
     async evaluate(input, judge) {
         if (!judge)
             throw new Error('Judge required for repetition_avoidance criterion');

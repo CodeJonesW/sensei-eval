@@ -152,6 +152,7 @@ export const engagement: EvalCriterion = {
   method: 'llm_judge',
   threshold: 0.5,
   weight: 1.0,
+  optional: true,
   async evaluate(input: EvalInput, judge?: Judge): Promise<EvalScore> {
     if (!judge) throw new Error('Judge required for engagement criterion');
     const result = await judge.score(input.content, engagementRubric);
@@ -187,6 +188,7 @@ export const repetitionAvoidance: EvalCriterion = {
   method: 'llm_judge',
   threshold: 0.5,
   weight: 1.0,
+  optional: true,
   async evaluate(input: EvalInput, judge?: Judge): Promise<EvalScore> {
     if (!judge) throw new Error('Judge required for repetition_avoidance criterion');
 

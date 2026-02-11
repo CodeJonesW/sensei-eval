@@ -96,6 +96,48 @@ describe('EvalRunner', () => {
     });
   });
 
+  describe('optional criteria', () => {
+    const failingOptional: EvalCriterion = {
+      name: 'optional_check',
+      description: 'optional criterion that always fails',
+      contentTypes: '*',
+      method: 'deterministic',
+      threshold: 1.0,
+      weight: 1.0,
+      optional: true,
+      async evaluate(): Promise<import('../src/types.js').EvalScore> {
+        return {
+          criterion: 'optional_check',
+          score: 0.0,
+          rawScore: 0,
+          maxScore: 1,
+          passed: false,
+          reasoning: 'Always fails',
+        };
+      },
+    };
+
+    it('failing optional criterion does NOT block passed', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, failingOptional],
+      });
+
+      const result = await runner.quickCheck(makeInput('clean content'));
+      expect(result.passed).toBe(true);
+    });
+
+    it('failing optional criterion still affects overallScore', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, failingOptional],
+      });
+
+      const result = await runner.quickCheck(makeInput('clean content'));
+      // formatCompliance passes (score 1.0, weight 1.0), optional fails (score 0.0, weight 1.0)
+      // expected: (1.0 * 1.0 + 0.0 * 1.0) / (1.0 + 1.0) = 0.5
+      expect(result.overallScore).toBeCloseTo(0.5, 2);
+    });
+  });
+
   describe('evaluate', () => {
     it('throws when LLM criterion present but no judge', async () => {
       const llmCriterion: EvalCriterion = {

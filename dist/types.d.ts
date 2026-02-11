@@ -15,6 +15,7 @@ export interface EvalCriterion {
     method: 'deterministic' | 'llm_judge';
     threshold: number;
     weight: number;
+    optional?: boolean;
     evaluate: (input: EvalInput, judge?: Judge) => Promise<EvalScore>;
 }
 /** Score for a single criterion */

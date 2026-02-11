@@ -3,6 +3,30 @@
   "version": "0.1.0",
   "description": "Evaluate AI-generated educational content with deterministic checks and LLM-as-judge scoring",
   "type": "module",
+  "license": "MIT",
+  "author": "Will Jones",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeJonesW/prompt-eval.git"
+  },
+  "homepage": "https://github.com/CodeJonesW/prompt-eval#readme",
+  "bugs": {
+    "url": "https://github.com/CodeJonesW/prompt-eval/issues"
+  },
+  "keywords": [
+    "eval",
+    "evaluation",
+    "educational-content",
+    "llm",
+    "llm-judge",
+    "ai",
+    "content-quality",
+    "rubric",
+    "scoring"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -13,9 +37,11 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --config tests/integration/vitest.config.ts",
+    "analyze": "npx tsx scripts/analyze-discrimination.ts"
   },
   "files": [
     "dist"
