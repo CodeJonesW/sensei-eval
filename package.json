@@ -1,5 +1,5 @@
 {
-  "name": "edu-eval",
+  "name": "sensei-eval",
   "version": "0.1.0",
   "description": "Evaluate AI-generated educational content with deterministic checks and LLM-as-judge scoring",
   "type": "module",
