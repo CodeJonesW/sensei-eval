@@ -1,4 +1,4 @@
-# edu-eval
+# sensei-eval
 
 TypeScript library for evaluating AI-generated educational content using deterministic checks and LLM-as-judge scoring.
 

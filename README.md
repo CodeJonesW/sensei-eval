@@ -1,17 +1,17 @@
-# edu-eval
+# sensei-eval
 
 TypeScript library for evaluating AI-generated educational content using deterministic checks and LLM-as-judge scoring.
 
 ## Install
 
 ```bash
-npm install edu-eval
+npm install sensei-eval
 ```
 
 ## Quick Start
 
 ```typescript
-import { EvalRunner, createJudge, criteria } from 'edu-eval';
+import { EvalRunner, createJudge, criteria } from 'sensei-eval';
 
 // Full evaluation (deterministic + LLM judge)
 const judge = createJudge({ apiKey: process.env.ANTHROPIC_API_KEY! });
