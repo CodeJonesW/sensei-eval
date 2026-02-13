@@ -31,6 +31,7 @@ export const problemClarity: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -69,6 +70,7 @@ export const difficultyCalibration: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -104,6 +106,7 @@ export const hintQuality: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -139,6 +142,7 @@ export const testability: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };

@@ -29,6 +29,7 @@ export const topicAccuracy = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -62,6 +63,7 @@ export const pedagogicalStructure = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -95,6 +97,7 @@ export const codeQuality = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -131,6 +134,7 @@ export const progressiveDifficulty = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };

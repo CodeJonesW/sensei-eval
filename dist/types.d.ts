@@ -26,13 +26,25 @@ export interface EvalScore {
     maxScore: number;
     passed: boolean;
     reasoning: string;
+    suggestions?: string[];
     metadata?: Record<string, unknown>;
+}
+/** Structured actionable feedback from evaluation */
+export interface EvalFeedback {
+    failedCriteria: {
+        criterion: string;
+        reasoning: string;
+        suggestions: string[];
+    }[];
+    strengths: string[];
+    suggestions: string[];
 }
 /** Full evaluation result */
 export interface EvalResult {
     overallScore: number;
     passed: boolean;
     scores: EvalScore[];
+    feedback: EvalFeedback;
     contentType: string;
     evaluatedAt: string;
 }
@@ -41,6 +53,7 @@ export interface Judge {
     score: (content: string, rubric: JudgeRubric, context?: string) => Promise<{
         score: number;
         reasoning: string;
+        suggestions?: string[];
     }>;
 }
 /** Rubric for LLM-as-judge scoring */

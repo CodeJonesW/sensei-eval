@@ -53,6 +53,21 @@ describe('format_compliance', () => {
     );
     expect(result.passed).toBe(true);
   });
+
+  it('returns empty suggestions when passing', async () => {
+    const result = await formatCompliance.evaluate(makeInput(goodLesson));
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('returns per-issue suggestions when failing', async () => {
+    const result = await formatCompliance.evaluate(
+      makeInput('**unclosed bold and ```\nunclosed code'),
+    );
+    expect(result.passed).toBe(false);
+    expect(result.suggestions).toBeDefined();
+    expect(result.suggestions!.length).toBeGreaterThan(0);
+    expect(result.suggestions!.some((s) => s.includes('unclosed'))).toBe(true);
+  });
 });
 
 describe('length_compliance', () => {
@@ -92,6 +107,25 @@ describe('length_compliance', () => {
     // review min is 100, max is 2000
     expect(result.passed).toBe(true);
   });
+
+  it('returns empty suggestions when passing', async () => {
+    const result = await lengthCompliance.evaluate(makeInput(goodLesson));
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('returns suggestion about being too short', async () => {
+    const result = await lengthCompliance.evaluate(makeInput('too short'));
+    expect(result.suggestions).toBeDefined();
+    expect(result.suggestions!.length).toBe(1);
+    expect(result.suggestions![0]).toContain('short');
+  });
+
+  it('returns suggestion about being too long', async () => {
+    const result = await lengthCompliance.evaluate(makeInput('a'.repeat(6000)));
+    expect(result.suggestions).toBeDefined();
+    expect(result.suggestions!.length).toBe(1);
+    expect(result.suggestions![0]).toContain('over');
+  });
 });
 
 describe('has_code_block', () => {
@@ -117,6 +151,18 @@ describe('has_code_block', () => {
   it('only applies to lesson and challenge content types', () => {
     expect(hasCodeBlockCriterion.contentTypes).toContain('lesson');
     expect(hasCodeBlockCriterion.contentTypes).toContain('challenge');
+  });
+
+  it('returns empty suggestions when passing', async () => {
+    const result = await hasCodeBlockCriterion.evaluate(makeInput(goodLesson));
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('returns suggestion when failing', async () => {
+    const result = await hasCodeBlockCriterion.evaluate(
+      makeInput('# Heading\n\nNo code here.'),
+    );
+    expect(result.suggestions).toEqual(['Add at least one fenced code block']);
   });
 });
 
@@ -146,5 +192,26 @@ describe('has_structure', () => {
     const content = '# Section 1\n\nText\n\n## Section 2\n\nMore text';
     const result = await hasStructure.evaluate(makeInput(content));
     expect(result.passed).toBe(true);
+  });
+
+  it('returns empty suggestions when passing', async () => {
+    const result = await hasStructure.evaluate(makeInput(goodLesson));
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('suggests adding headings when none present', async () => {
+    const result = await hasStructure.evaluate(
+      makeInput('Just text without any structure.'),
+    );
+    expect(result.suggestions).toBeDefined();
+    expect(result.suggestions!.some((s) => s.includes('heading'))).toBe(true);
+  });
+
+  it('suggests splitting into sections when only one heading', async () => {
+    const result = await hasStructure.evaluate(
+      makeInput('# Only One Heading\n\nSome content here.'),
+    );
+    expect(result.suggestions).toBeDefined();
+    expect(result.suggestions!.some((s) => s.includes('section'))).toBe(true);
   });
 });

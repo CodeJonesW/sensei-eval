@@ -20,20 +20,26 @@ function makeInput(overrides: Partial<EvalInput> = {}): EvalInput {
 
 describe('problem_clarity', () => {
   it('normalizes and passes for good score', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 4, reasoning: 'Clear problem' });
+    vi.mocked(mockJudge.score).mockResolvedValue({ score: 4, reasoning: 'Clear problem', suggestions: [] });
     const result = await problemClarity.evaluate(makeInput(), mockJudge);
 
     expect(result.score).toBeCloseTo(0.75);
     expect(result.passed).toBe(true);
     expect(result.criterion).toBe('problem_clarity');
+    expect(result.suggestions).toEqual([]);
   });
 
-  it('fails for unclear problems', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 1, reasoning: 'Completely unclear' });
+  it('fails for unclear problems and returns suggestions', async () => {
+    vi.mocked(mockJudge.score).mockResolvedValue({
+      score: 1,
+      reasoning: 'Completely unclear',
+      suggestions: ['Add concrete examples of expected input/output'],
+    });
     const result = await problemClarity.evaluate(makeInput(), mockJudge);
 
     expect(result.score).toBe(0);
     expect(result.passed).toBe(false);
+    expect(result.suggestions).toEqual(['Add concrete examples of expected input/output']);
   });
 
   it('only applies to challenge content type', () => {
@@ -47,7 +53,7 @@ describe('problem_clarity', () => {
 
 describe('difficulty_calibration', () => {
   it('passes difficulty context to judge', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 3, reasoning: 'ok' });
+    vi.mocked(mockJudge.score).mockResolvedValue({ score: 3, reasoning: 'ok', suggestions: [] });
     await difficultyCalibration.evaluate(
       makeInput({ difficulty: 'hard' }),
       mockJudge,
@@ -61,7 +67,7 @@ describe('difficulty_calibration', () => {
   });
 
   it('does not pass context when no difficulty specified', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 3, reasoning: 'ok' });
+    vi.mocked(mockJudge.score).mockResolvedValue({ score: 3, reasoning: 'ok', suggestions: [] });
     await difficultyCalibration.evaluate(makeInput(), mockJudge);
 
     expect(mockJudge.score).toHaveBeenCalledWith(
@@ -74,21 +80,23 @@ describe('difficulty_calibration', () => {
 
 describe('hint_quality', () => {
   it('scores hint quality', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 4, reasoning: 'Good progressive hints' });
+    vi.mocked(mockJudge.score).mockResolvedValue({ score: 4, reasoning: 'Good progressive hints', suggestions: [] });
     const result = await hintQuality.evaluate(makeInput(), mockJudge);
 
     expect(result.score).toBeCloseTo(0.75);
     expect(result.passed).toBe(true);
+    expect(result.suggestions).toEqual([]);
   });
 });
 
 describe('testability', () => {
   it('scores testability', async () => {
-    vi.mocked(mockJudge.score).mockResolvedValue({ score: 5, reasoning: 'Full test cases' });
+    vi.mocked(mockJudge.score).mockResolvedValue({ score: 5, reasoning: 'Full test cases', suggestions: [] });
     const result = await testability.evaluate(makeInput(), mockJudge);
 
     expect(result.score).toBe(1.0);
     expect(result.passed).toBe(true);
+    expect(result.suggestions).toEqual([]);
   });
 
   it('throws without judge', async () => {

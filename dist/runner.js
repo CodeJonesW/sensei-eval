@@ -47,13 +47,34 @@ export class EvalRunner {
         const passed = scores
             .filter((s) => !optionalNames.has(s.criterion))
             .every((s) => s.passed);
+        const feedback = this.buildFeedback(scores, applicable);
         return {
             overallScore,
             passed,
             scores,
+            feedback,
             contentType,
             evaluatedAt: new Date().toISOString(),
         };
+    }
+    buildFeedback(scores, applicable) {
+        const weightMap = new Map(applicable.map((c) => [c.name, c.weight]));
+        const failedCriteria = scores
+            .filter((s) => !s.passed)
+            .map((s) => ({
+            criterion: s.criterion,
+            reasoning: s.reasoning,
+            suggestions: s.suggestions ?? [],
+        }));
+        const strengths = scores
+            .filter((s) => s.score >= 0.75)
+            .map((s) => s.reasoning);
+        // Aggregate suggestions from failed + low-scoring criteria, sorted by weight descending
+        const lowScoring = scores
+            .filter((s) => !s.passed || s.score < 0.75)
+            .sort((a, b) => (weightMap.get(b.criterion) ?? 1) - (weightMap.get(a.criterion) ?? 1));
+        const suggestions = lowScoring.flatMap((s) => s.suggestions ?? []);
+        return { failedCriteria, strengths, suggestions };
     }
 }
 //# sourceMappingURL=runner.js.map

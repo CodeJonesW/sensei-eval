@@ -44,6 +44,7 @@ describe('EvalRunner', () => {
       expect(result.scores.length).toBe(4);
       expect(result.contentType).toBe('lesson');
       expect(result.evaluatedAt).toBeTruthy();
+      expect(result.feedback).toBeDefined();
     });
 
     it('skips LLM criteria even if present', async () => {
@@ -113,6 +114,7 @@ describe('EvalRunner', () => {
           maxScore: 1,
           passed: false,
           reasoning: 'Always fails',
+          suggestions: ['Fix the optional check'],
         };
       },
     };
@@ -161,7 +163,7 @@ describe('EvalRunner', () => {
 
     it('runs both deterministic and LLM criteria', async () => {
       const mockJudge: Judge = {
-        score: vi.fn().mockResolvedValue({ score: 4, reasoning: 'Good' }),
+        score: vi.fn().mockResolvedValue({ score: 4, reasoning: 'Good', suggestions: [] }),
       };
 
       const llmCriterion: EvalCriterion = {
@@ -184,6 +186,7 @@ describe('EvalRunner', () => {
             maxScore: 5,
             passed: true,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
           };
         },
       };
@@ -197,6 +200,109 @@ describe('EvalRunner', () => {
       expect(result.scores.length).toBe(2);
       expect(result.scores.map((s) => s.criterion)).toContain('format_compliance');
       expect(result.scores.map((s) => s.criterion)).toContain('mock_llm');
+      expect(result.feedback).toBeDefined();
+    });
+  });
+
+  describe('feedback', () => {
+    it('returns failed criteria with reasoning and suggestions', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion],
+      });
+
+      // No code block → has_code_block fails
+      const result = await runner.quickCheck(makeInput('# Heading\n\nNo code here.'));
+      expect(result.feedback.failedCriteria.length).toBeGreaterThan(0);
+
+      const failed = result.feedback.failedCriteria.find((f) => f.criterion === 'has_code_block');
+      expect(failed).toBeDefined();
+      expect(failed!.suggestions).toContain('Add at least one fenced code block');
+    });
+
+    it('returns strengths from high-scoring criteria', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance],
+      });
+
+      const result = await runner.quickCheck(makeInput('clean content'));
+      // formatCompliance passes with score 1.0 (>= 0.75)
+      expect(result.feedback.strengths.length).toBeGreaterThan(0);
+      expect(result.feedback.strengths[0]).toContain('properly closed');
+    });
+
+    it('aggregates suggestions from failed criteria', async () => {
+      const runner = new EvalRunner({
+        criteria: [hasCodeBlockCriterion, hasStructure],
+      });
+
+      // No code block, no headings
+      const result = await runner.quickCheck(makeInput('just plain text'));
+      expect(result.feedback.suggestions.length).toBeGreaterThan(0);
+      expect(result.feedback.suggestions.some((s) => s.includes('code block'))).toBe(true);
+      expect(result.feedback.suggestions.some((s) => s.includes('heading'))).toBe(true);
+    });
+
+    it('returns empty feedback arrays when all criteria pass', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance],
+      });
+
+      const result = await runner.quickCheck(makeInput('clean content'));
+      expect(result.feedback.failedCriteria).toEqual([]);
+      expect(result.feedback.suggestions).toEqual([]);
+      expect(result.feedback.strengths.length).toBeGreaterThan(0);
+    });
+
+    it('orders suggestions by criterion weight descending', async () => {
+      // Create two failing criteria with different weights
+      const highWeight: EvalCriterion = {
+        name: 'high_weight',
+        description: 'high weight criterion',
+        contentTypes: '*',
+        method: 'deterministic',
+        threshold: 1.0,
+        weight: 1.5,
+        async evaluate(): Promise<import('../src/types.js').EvalScore> {
+          return {
+            criterion: 'high_weight',
+            score: 0.0,
+            rawScore: 0,
+            maxScore: 1,
+            passed: false,
+            reasoning: 'Failed high weight',
+            suggestions: ['Fix high weight issue'],
+          };
+        },
+      };
+
+      const lowWeight: EvalCriterion = {
+        name: 'low_weight',
+        description: 'low weight criterion',
+        contentTypes: '*',
+        method: 'deterministic',
+        threshold: 1.0,
+        weight: 0.5,
+        async evaluate(): Promise<import('../src/types.js').EvalScore> {
+          return {
+            criterion: 'low_weight',
+            score: 0.0,
+            rawScore: 0,
+            maxScore: 1,
+            passed: false,
+            reasoning: 'Failed low weight',
+            suggestions: ['Fix low weight issue'],
+          };
+        },
+      };
+
+      const runner = new EvalRunner({
+        criteria: [lowWeight, highWeight],
+      });
+
+      const result = await runner.quickCheck(makeInput('test'));
+      // High weight suggestions should come first
+      expect(result.feedback.suggestions[0]).toBe('Fix high weight issue');
+      expect(result.feedback.suggestions[1]).toBe('Fix low weight issue');
     });
   });
 });

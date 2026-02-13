@@ -20,6 +20,7 @@ export const brevity = {
             reasoning: passed
                 ? `Review is ${len} chars, within ${maxChars} char budget`
                 : `Review is ${len} chars, exceeds ${maxChars} char budget`,
+            suggestions: passed ? [] : [`Reduce by ${len - maxChars} chars to fit within ${maxChars} char budget`],
         };
     },
 };
@@ -53,6 +54,7 @@ export const actionability = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -86,6 +88,7 @@ export const honesty = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };

@@ -31,6 +31,7 @@ export const formatCompliance: EvalCriterion = {
     if (hasUnclosedItalic(input.content)) issues.push('unclosed italic marker');
 
     const passed = issues.length === 0;
+    const suggestions = issues.map((issue) => `Close the ${issue}`);
     return {
       criterion: 'format_compliance',
       score: passed ? 1.0 : 0.0,
@@ -40,6 +41,7 @@ export const formatCompliance: EvalCriterion = {
       reasoning: passed
         ? 'All markdown formatting is properly closed'
         : `Formatting issues: ${issues.join(', ')}`,
+      suggestions,
     };
   },
 };
@@ -61,10 +63,13 @@ export const lengthCompliance: EvalCriterion = {
     const passed = len >= limits.min && len <= limits.max;
 
     let score = 1.0;
+    const suggestions: string[] = [];
     if (len < limits.min) {
       score = Math.max(0, len / limits.min);
+      suggestions.push(`Content is ${limits.min - len} chars short of the minimum — add more detail`);
     } else if (len > limits.max) {
       score = Math.max(0, 1 - (len - limits.max) / limits.max);
+      suggestions.push(`Content is ${len - limits.max} chars over the maximum — trim to fit within ${limits.max} chars`);
     }
 
     return {
@@ -76,6 +81,7 @@ export const lengthCompliance: EvalCriterion = {
       reasoning: passed
         ? `Content length ${len} chars is within range [${limits.min}, ${limits.max}]`
         : `Content length ${len} chars is outside range [${limits.min}, ${limits.max}]`,
+      suggestions,
       metadata: { charCount: len, min: limits.min, max: limits.max },
     };
   },
@@ -99,6 +105,7 @@ export const hasCodeBlockCriterion: EvalCriterion = {
       reasoning: passed
         ? 'Content contains at least one code block'
         : 'No code block found in content',
+      suggestions: passed ? [] : ['Add at least one fenced code block'],
     };
   },
 };
@@ -117,6 +124,10 @@ export const hasStructure: EvalCriterion = {
     const score = headings && sections ? 1.0 : headings ? 0.5 : 0.0;
     const passed = score >= this.threshold;
 
+    const suggestions: string[] = [];
+    if (!headings) suggestions.push('Add markdown headings to organize the content');
+    if (headings && !sections) suggestions.push('Split into multiple sections with distinct headings');
+
     return {
       criterion: 'has_structure',
       score,
@@ -128,6 +139,7 @@ export const hasStructure: EvalCriterion = {
           ? 'Content has headings and multiple sections'
           : 'Content has headings but lacks clear section structure'
         : 'Content lacks markdown headings',
+      suggestions,
     };
   },
 };
@@ -164,6 +176,7 @@ export const engagement: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -200,6 +213,7 @@ export const repetitionAvoidance: EvalCriterion = {
         maxScore: 5,
         passed: true,
         reasoning: 'No previous content to compare against',
+        suggestions: [],
       };
     }
 
@@ -213,6 +227,7 @@ export const repetitionAvoidance: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };

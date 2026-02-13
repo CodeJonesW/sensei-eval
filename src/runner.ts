@@ -1,4 +1,4 @@
-import type { EvalCriterion, EvalInput, EvalResult, Judge } from './types.js';
+import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, Judge } from './types.js';
 
 export class EvalRunner {
   private criteria: EvalCriterion[];
@@ -58,7 +58,7 @@ export class EvalRunner {
   }
 
   private buildResult(
-    scores: import('./types.js').EvalScore[],
+    scores: EvalScore[],
     applicable: EvalCriterion[],
     contentType: string,
   ): EvalResult {
@@ -82,12 +82,43 @@ export class EvalRunner {
       .filter((s) => !optionalNames.has(s.criterion))
       .every((s) => s.passed);
 
+    const feedback = this.buildFeedback(scores, applicable);
+
     return {
       overallScore,
       passed,
       scores,
+      feedback,
       contentType,
       evaluatedAt: new Date().toISOString(),
     };
+  }
+
+  private buildFeedback(
+    scores: EvalScore[],
+    applicable: EvalCriterion[],
+  ): EvalFeedback {
+    const weightMap = new Map(applicable.map((c) => [c.name, c.weight]));
+
+    const failedCriteria = scores
+      .filter((s) => !s.passed)
+      .map((s) => ({
+        criterion: s.criterion,
+        reasoning: s.reasoning,
+        suggestions: s.suggestions ?? [],
+      }));
+
+    const strengths = scores
+      .filter((s) => s.score >= 0.75)
+      .map((s) => s.reasoning);
+
+    // Aggregate suggestions from failed + low-scoring criteria, sorted by weight descending
+    const lowScoring = scores
+      .filter((s) => !s.passed || s.score < 0.75)
+      .sort((a, b) => (weightMap.get(b.criterion) ?? 1) - (weightMap.get(a.criterion) ?? 1));
+
+    const suggestions = lowScoring.flatMap((s) => s.suggestions ?? []);
+
+    return { failedCriteria, strengths, suggestions };
   }
 }

@@ -13,5 +13,6 @@ export declare class EvalRunner {
     /** Run only deterministic checks (no API calls) */
     quickCheck(input: EvalInput): Promise<EvalResult>;
     private buildResult;
+    private buildFeedback;
 }
 //# sourceMappingURL=runner.d.ts.map

@@ -6,6 +6,7 @@ export type {
   EvalInput,
   EvalCriterion,
   EvalScore,
+  EvalFeedback,
   EvalResult,
   Judge,
   JudgeRubric,

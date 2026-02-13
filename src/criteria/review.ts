@@ -25,6 +25,7 @@ export const brevity: EvalCriterion = {
       reasoning: passed
         ? `Review is ${len} chars, within ${maxChars} char budget`
         : `Review is ${len} chars, exceeds ${maxChars} char budget`,
+      suggestions: passed ? [] : [`Reduce by ${len - maxChars} chars to fit within ${maxChars} char budget`],
     };
   },
 };
@@ -60,6 +61,7 @@ export const actionability: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -95,6 +97,7 @@ export const honesty: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };

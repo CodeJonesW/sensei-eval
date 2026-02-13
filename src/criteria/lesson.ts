@@ -31,6 +31,7 @@ export const topicAccuracy: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -66,6 +67,7 @@ export const pedagogicalStructure: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -101,6 +103,7 @@ export const codeQuality: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };
@@ -139,6 +142,7 @@ export const progressiveDifficulty: EvalCriterion = {
       maxScore: 5,
       passed: score >= this.threshold,
       reasoning: result.reasoning,
+      suggestions: result.suggestions ?? [],
     };
   },
 };

@@ -28,6 +28,7 @@ export const problemClarity = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -64,6 +65,7 @@ export const difficultyCalibration = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -97,6 +99,7 @@ export const hintQuality = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
@@ -130,6 +133,7 @@ export const testability = {
             maxScore: 5,
             passed: score >= this.threshold,
             reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
         };
     },
 };
