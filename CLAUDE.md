@@ -84,3 +84,16 @@ This package follows [Semantic Versioning](https://semver.org/). After completin
 - **Major** (X.0.0) — removed or renamed exports, changed function signatures, changed type shapes that existing consumers depend on, removed CLI commands/flags, breaking config format changes
 
 When recommending a bump, reference the current version in `package.json` and list the specific changes that justify the level. For pre-1.0 packages, minor bumps cover new features and patch bumps cover fixes — but still flag breaking changes clearly even though semver technically allows them under 0.x.
+
+## Release Process
+
+Merging to main with a version bump in `package.json` triggers automatic publishing to npm and creates a GitHub release. On every version bump, draft release notes covering:
+
+1. **What changed** — list each user-facing change (new features, bug fixes, improvements)
+2. **Why it matters** — one sentence per item explaining the benefit
+3. **Breaking changes** — call out anything that requires consumer action (if any)
+4. **Migration steps** — if breaking, provide before/after code examples
+
+Format release notes as a markdown body for `gh release create`. Keep them concise — a consumer should understand what changed in 30 seconds.
+
+The `NPM_TOKEN` secret must be configured in the repository settings for publishing to work.
