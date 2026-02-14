@@ -1,0 +1,41 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Release notes (markdown)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+
+          if gh release view "$VERSION" &>/dev/null; then
+            echo "::error::Release $VERSION already exists"
+            exit 1
+          fi
+
+          NOTES="${{ inputs.notes }}"
+          if [ -n "$NOTES" ]; then
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --notes "$NOTES"
+          else
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --generate-notes
+          fi
+
+          echo "Created release $VERSION"
