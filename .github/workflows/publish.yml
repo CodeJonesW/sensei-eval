@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Detect version bump from PR title
@@ -36,7 +38,7 @@ jobs:
       - if: steps.bump.outputs.type != ''
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
 
       - if: steps.bump.outputs.type != ''
@@ -62,9 +64,7 @@ jobs:
           git push
 
       - if: steps.bump.outputs.type != ''
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
 
       - if: steps.bump.outputs.type != ''
         name: Create GitHub release
