@@ -9,6 +9,7 @@ jobs:
   publish:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    environment: sensei-eval
     permissions:
       contents: write
       id-token: write
@@ -81,6 +82,8 @@ jobs:
 
       - if: steps.bump.outputs.type != ''
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - if: steps.bump.outputs.type != ''
         name: Create GitHub release
