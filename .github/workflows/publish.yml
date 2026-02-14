@@ -1,13 +1,11 @@
 name: Publish to npm
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 jobs:
   publish:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,72 +13,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
 
-      - name: Detect version bump from PR title
-        id: bump
+      - name: Check for version change
+        id: version
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "PR title: $TITLE"
+          CURRENT=$(node -p "require('./package.json').version")
+          PREVIOUS=$(git show HEAD~1:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).version" 2>/dev/null || echo "")
 
-          if echo "$TITLE" | grep -qi '^major:'; then
-            echo "type=major" >> "$GITHUB_OUTPUT"
-          elif echo "$TITLE" | grep -qi '^minor:'; then
-            echo "type=minor" >> "$GITHUB_OUTPUT"
-          elif echo "$TITLE" | grep -qi '^patch:'; then
-            echo "type=patch" >> "$GITHUB_OUTPUT"
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=v$CURRENT" >> "$GITHUB_OUTPUT"
+            echo "Version changed: $PREVIOUS → $CURRENT"
           else
-            echo "type=" >> "$GITHUB_OUTPUT"
-            echo "No version prefix found in PR title, skipping publish"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged ($CURRENT), skipping publish"
           fi
 
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         run: npm ci
 
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         run: npm test
 
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         run: npm run build
 
-      - if: steps.bump.outputs.type != ''
-        name: Bump version
-        id: version
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          NEW_VERSION=$(npm version ${{ steps.bump.outputs.type }} --no-git-tag-version)
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Bumped to $NEW_VERSION"
-          git add package.json package-lock.json 2>/dev/null || git add package.json
-          git commit -m "release: $NEW_VERSION"
-          git push
-
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         run: npm publish --provenance --access public
 
-      - if: steps.bump.outputs.type != ''
+      - if: steps.version.outputs.changed == 'true'
         name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          NOTES_FILE=$(mktemp)
-          if [ -n "$PR_BODY" ]; then
-            echo "$PR_BODY" > "$NOTES_FILE"
-          else
-            echo "No release notes provided." > "$NOTES_FILE"
-          fi
+          VERSION="${{ steps.version.outputs.version }}"
 
-          gh release create "${{ steps.version.outputs.version }}" \
-            --title "${{ steps.version.outputs.version }}" \
-            --notes-file "$NOTES_FILE"
+          # Extract release notes from commit body (skip first line which is "release: vX.Y.Z")
+          NOTES_FILE=$(mktemp)
+          git log -1 --pretty=%b > "$NOTES_FILE"
+
+          if [ -s "$NOTES_FILE" ]; then
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --notes-file "$NOTES_FILE"
+          else
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --generate-notes
+          fi
 
           rm -f "$NOTES_FILE"
