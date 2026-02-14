@@ -9,6 +9,7 @@ export interface CliArgs {
   threshold: number;
   verbose: boolean;
   format: 'text' | 'json' | 'markdown';
+  resultFile: string;
 }
 
 export function parseArgs(argv: string[]): CliArgs {
@@ -31,6 +32,7 @@ export function parseArgs(argv: string[]): CliArgs {
     threshold: 0,
     verbose: false,
     format: 'text',
+    resultFile: '',
   };
 
   for (let i = 1; i < args.length; i++) {
@@ -57,6 +59,8 @@ export function parseArgs(argv: string[]): CliArgs {
       if (fmt === 'text' || fmt === 'json' || fmt === 'markdown') {
         defaults.format = fmt;
       }
+    } else if (arg === '--result-file') {
+      defaults.resultFile = args[++i] ?? defaults.resultFile;
     }
   }
 
@@ -90,5 +94,6 @@ Options:
   -t, --threshold <n>     Regression threshold (default: 0)
   -v, --verbose           Verbose output
   --api-key <key>         Anthropic API key (or set ANTHROPIC_API_KEY)
+  --result-file <path>    Write JSON result to file (compare command)
 `);
 }

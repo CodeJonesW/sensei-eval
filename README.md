@@ -1,6 +1,6 @@
 # sensei-eval
 
-TypeScript library for evaluating AI-generated educational content using deterministic checks and LLM-as-judge scoring.
+TypeScript library for evaluating AI-generated educational content using deterministic checks and LLM-as-judge scoring. Includes a CLI and GitHub Action for detecting prompt quality regressions in CI.
 
 ## Install
 
@@ -9,6 +9,8 @@ npm install sensei-eval
 ```
 
 ## Quick Start
+
+### Library Usage
 
 ```typescript
 import { EvalRunner, createJudge, criteria } from 'sensei-eval';
@@ -42,6 +44,132 @@ const quick = await runner.quickCheck({
   contentType: 'lesson',
 });
 ```
+
+## CLI
+
+The CLI evaluates prompts defined in a config file, generates baselines, and compares against them to detect regressions.
+
+### Setup
+
+Create a config file (`sensei-eval.config.ts`) in your project:
+
+```typescript
+import type { SenseiEvalConfig } from 'sensei-eval';
+
+const config: SenseiEvalConfig = {
+  prompts: [
+    {
+      name: 'intro-to-arrays',
+      content: `# Arrays in JavaScript\n\nArrays are ordered collections...`,
+      contentType: 'lesson',
+      topic: 'Arrays',
+      difficulty: 'beginner',
+    },
+    {
+      name: 'array-challenge',
+      content: `# Challenge: Flatten an Array\n\nGiven a nested array...`,
+      contentType: 'challenge',
+      difficulty: 'intermediate',
+    },
+  ],
+};
+
+export default config;
+```
+
+> `.ts` configs require [`tsx`](https://github.com/privatenumber/tsx) (`npm install -D tsx`). `.js`/`.mjs` configs work natively.
+
+### Commands
+
+```bash
+# Evaluate all prompts and print results
+npx sensei-eval eval
+
+# Evaluate and write a baseline file
+npx sensei-eval baseline
+
+# Evaluate and compare against the baseline (exits non-zero on regression)
+npx sensei-eval compare
+```
+
+### Options
+
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--config <path>` | `-c` | Config file path | `sensei-eval.config.ts` |
+| `--baseline <path>` | `-b` | Baseline file path | `sensei-eval.baseline.json` |
+| `--output <path>` | `-o` | Output file path (baseline command) | Same as `--baseline` |
+| `--quick` | `-q` | Deterministic only, skip LLM criteria | `false` |
+| `--format <fmt>` | `-f` | Output format: `text`, `json`, `markdown` | `text` |
+| `--model <model>` | `-m` | LLM model to use | `claude-sonnet-4-20250514` |
+| `--threshold <n>` | `-t` | Score drop tolerance before failing | `0` |
+| `--verbose` | `-v` | Show per-criterion details | `false` |
+| `--api-key <key>` | | Anthropic API key | `ANTHROPIC_API_KEY` env |
+| `--result-file <path>` | | Write JSON result to file (compare) | |
+
+### CI Workflow
+
+The typical workflow for using sensei-eval as a CI quality gate:
+
+1. **Generate a baseline on main** — run `npx sensei-eval baseline` and commit `sensei-eval.baseline.json`
+2. **PRs compare against baseline** — CI runs `npx sensei-eval compare`, which evaluates current prompts and fails if any score drops below baseline
+3. **Update baseline when prompts change intentionally** — re-run `npx sensei-eval baseline` and commit the updated file
+
+This approach avoids re-evaluating the baseline on every PR (saving LLM cost) and eliminates non-determinism from comparing two separate LLM runs.
+
+## GitHub Action
+
+A reusable composite action is provided for easy CI integration.
+
+### Basic Usage
+
+```yaml
+# .github/workflows/prompt-quality.yml
+name: Prompt Quality
+on: [pull_request]
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CodeJonesW/sensei-eval@v1
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+### All Inputs
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `config` | Path to config file | `sensei-eval.config.ts` |
+| `baseline` | Path to baseline JSON | `sensei-eval.baseline.json` |
+| `mode` | `full` (with LLM) or `quick` (deterministic only) | `full` |
+| `anthropic-api-key` | Anthropic API key | |
+| `model` | LLM model override | |
+| `threshold` | Score drop tolerance | `0` |
+| `node-version` | Node.js version | `20` |
+
+### Outputs
+
+| Output | Description |
+|--------|-------------|
+| `passed` | `'true'` or `'false'` |
+| `result` | Full `CompareResult` JSON |
+
+### Using Outputs
+
+```yaml
+- uses: CodeJonesW/sensei-eval@v1
+  id: eval
+  with:
+    anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+- if: steps.eval.outputs.passed == 'false'
+  run: echo "Prompt quality regressed!"
+```
+
+The action also writes a markdown summary table to the GitHub Actions job summary automatically.
 
 ## How It Works
 
@@ -129,6 +257,23 @@ const judge = createJudge({
 });
 ```
 
+### Baseline Functions
+
+```typescript
+import { toBaselineEntry, createBaseline, compareResults } from 'sensei-eval';
+
+// Convert an EvalResult to a baseline entry
+const entry = toBaselineEntry('intro-lesson', evalResult);
+
+// Create a baseline file from entries
+const baseline = createBaseline([entry], 'full');
+
+// Compare current results against a baseline
+const comparison = compareResults(currentResults, baseline, threshold);
+console.log(comparison.passed);   // true if no regressions
+console.log(comparison.summary);  // { total, regressed, improved, unchanged, new }
+```
+
 ### Types
 
 ```typescript
@@ -158,6 +303,28 @@ interface EvalScore {
   reasoning: string;
   metadata?: Record<string, unknown>;
 }
+
+interface PromptEntry {
+  name: string;
+  content: string;
+  contentType: string;
+  topic?: string;
+  difficulty?: string;
+  previousContent?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+interface SenseiEvalConfig {
+  prompts: PromptEntry[];
+  criteria?: EvalCriterion[];       // override built-in criteria
+  model?: string;                   // override default model
+}
+
+interface CompareResult {
+  passed: boolean;
+  prompts: PromptCompareResult[];
+  summary: { total: number; regressed: number; improved: number; unchanged: number; new: number };
+}
 ```
 
 ## Adding a New Criterion
@@ -185,17 +352,31 @@ src/
   types.ts              # all interfaces
   runner.ts             # EvalRunner orchestration
   judge.ts              # Anthropic SDK wrapper
+  baseline.ts           # baseline comparison logic
   criteria/
     index.ts            # re-exports all criterion sets
     universal.ts        # criteria for all content types
     lesson.ts           # lesson-specific criteria
     challenge.ts        # challenge-specific criteria
     review.ts           # review-specific criteria
+  cli/
+    index.ts            # CLI entry point
+    args.ts             # argument parsing
+    config.ts           # config file loading
+    format.ts           # output formatting (text, json, markdown)
+    commands/
+      eval.ts           # eval command
+      baseline.ts       # baseline command
+      compare.ts        # compare command
+      shared.ts         # shared runner factory
   utils/
     markdown.ts         # markdown parsing helpers
 tests/
   fixtures/             # good/bad lesson and challenge markdown
   criteria/             # per-criterion tests
+  cli/                  # CLI tests (args, config, format)
+  baseline.test.ts      # baseline comparison tests
   runner.test.ts        # orchestration tests
   judge.test.ts         # judge tests
+action.yml              # GitHub Action definition
 ```

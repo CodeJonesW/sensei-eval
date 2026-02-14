@@ -45,6 +45,11 @@ export async function runCompare(args: CliArgs, config: SenseiEvalConfig): Promi
     console.log(formatCompareText(comparison, args.verbose));
   }
 
+  // Write JSON result to file if requested
+  if (args.resultFile) {
+    writeFileSync(resolve(args.resultFile), JSON.stringify(comparison, null, 2) + '\n');
+  }
+
   // Write to GITHUB_STEP_SUMMARY if available
   const summaryPath = process.env.GITHUB_STEP_SUMMARY;
   if (summaryPath) {
