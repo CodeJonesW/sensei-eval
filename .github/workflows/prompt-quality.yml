@@ -3,6 +3,16 @@ name: Prompt Quality
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Evaluation mode'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - quick
 
 jobs:
   eval:
@@ -25,8 +35,11 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          npx sensei-eval compare \
-            --config sensei-eval.config.ts \
-            --baseline sensei-eval.baseline.json \
-            --format text \
-            --verbose
+          ARGS="compare --config sensei-eval.config.ts --baseline sensei-eval.baseline.json --format text --verbose"
+
+          MODE="${{ github.event.inputs.mode || 'quick' }}"
+          if [ "$MODE" = "quick" ]; then
+            ARGS="$ARGS --quick"
+          fi
+
+          npx sensei-eval $ARGS
