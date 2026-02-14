@@ -3,17 +3,37 @@ import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, Jud
 export class EvalRunner {
   private criteria: EvalCriterion[];
   private judge?: Judge;
+  private knownContentTypes: Set<string>;
 
   constructor(opts: { criteria: EvalCriterion[]; judge?: Judge }) {
     this.criteria = opts.criteria;
     this.judge = opts.judge;
+    this.knownContentTypes = new Set(
+      opts.criteria
+        .flatMap((c) => (c.contentTypes === '*' ? [] : c.contentTypes)),
+    );
+  }
+
+  /** Get the set of content types recognized by registered criteria */
+  getKnownContentTypes(): string[] {
+    return [...this.knownContentTypes].sort();
   }
 
   /** Get criteria that apply to a given content type */
   getCriteria(contentType: string): EvalCriterion[] {
+    this.validateContentType(contentType);
     return this.criteria.filter(
       (c) => c.contentTypes === '*' || c.contentTypes.includes(contentType),
     );
+  }
+
+  private validateContentType(contentType: string): void {
+    if (this.knownContentTypes.size > 0 && !this.knownContentTypes.has(contentType)) {
+      const known = [...this.knownContentTypes].sort().join(', ');
+      throw new Error(
+        `Unknown content type "${contentType}". Known types: ${known}`,
+      );
+    }
   }
 
   /** Run full evaluation (deterministic + LLM judge criteria) */

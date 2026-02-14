@@ -23,12 +23,72 @@ describe('EvalRunner', () => {
 
     it('includes wildcard criteria for any content type', () => {
       const runner = new EvalRunner({
-        criteria: [formatCompliance, hasCodeBlockCriterion],
+        criteria: [formatCompliance, hasCodeBlockCriterion, brevity],
       });
 
       const reviewCriteria = runner.getCriteria('review');
       expect(reviewCriteria.map((c) => c.name)).toContain('format_compliance');
       expect(reviewCriteria.map((c) => c.name)).not.toContain('has_code_block');
+      expect(reviewCriteria.map((c) => c.name)).toContain('brevity');
+    });
+  });
+
+  describe('content type validation', () => {
+    it('throws on unknown content type in getCriteria', () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion, brevity],
+      });
+
+      expect(() => runner.getCriteria('leson')).toThrow(
+        'Unknown content type "leson". Known types: challenge, lesson, review',
+      );
+    });
+
+    it('throws on unknown content type in evaluate', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion],
+      });
+
+      await expect(runner.evaluate(makeInput('content', 'bogus'))).rejects.toThrow(
+        'Unknown content type "bogus"',
+      );
+    });
+
+    it('throws on unknown content type in quickCheck', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion],
+      });
+
+      await expect(runner.quickCheck(makeInput('content', 'bogus'))).rejects.toThrow(
+        'Unknown content type "bogus"',
+      );
+    });
+
+    it('allows known content types', () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion, brevity],
+      });
+
+      expect(() => runner.getCriteria('lesson')).not.toThrow();
+      expect(() => runner.getCriteria('challenge')).not.toThrow();
+      expect(() => runner.getCriteria('review')).not.toThrow();
+    });
+
+    it('skips validation when only wildcard criteria exist', () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance], // contentTypes: '*'
+      });
+
+      // No type-specific criteria → knownContentTypes is empty → no validation
+      expect(() => runner.getCriteria('anything')).not.toThrow();
+    });
+
+    it('exposes known content types via getKnownContentTypes', () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, hasCodeBlockCriterion, brevity],
+      });
+
+      expect(runner.getKnownContentTypes()).toEqual(['challenge', 'lesson', 'review']);
     });
   });
 
