@@ -1,13 +1,27 @@
 export class EvalRunner {
     criteria;
     judge;
+    knownContentTypes;
     constructor(opts) {
         this.criteria = opts.criteria;
         this.judge = opts.judge;
+        this.knownContentTypes = new Set(opts.criteria
+            .flatMap((c) => (c.contentTypes === '*' ? [] : c.contentTypes)));
+    }
+    /** Get the set of content types recognized by registered criteria */
+    getKnownContentTypes() {
+        return [...this.knownContentTypes].sort();
     }
     /** Get criteria that apply to a given content type */
     getCriteria(contentType) {
+        this.validateContentType(contentType);
         return this.criteria.filter((c) => c.contentTypes === '*' || c.contentTypes.includes(contentType));
+    }
+    validateContentType(contentType) {
+        if (this.knownContentTypes.size > 0 && !this.knownContentTypes.has(contentType)) {
+            const known = [...this.knownContentTypes].sort().join(', ');
+            throw new Error(`Unknown content type "${contentType}". Known types: ${known}`);
+        }
     }
     /** Run full evaluation (deterministic + LLM judge criteria) */
     async evaluate(input) {
