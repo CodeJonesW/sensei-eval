@@ -1,6 +1,6 @@
 {
   "name": "sensei-eval",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Evaluate AI-generated educational content with deterministic checks and LLM-as-judge scoring",
   "type": "module",
   "license": "MIT",
