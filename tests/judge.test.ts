@@ -1,19 +1,37 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { JudgeRubric } from '../src/types.js';
 
-// Mock the Anthropic SDK
+const { createMock, MockAPIError } = vi.hoisted(() => {
+  const createMock = vi.fn();
+
+  class MockAPIError extends Error {
+    status: number;
+    headers: Record<string, string>;
+    constructor(status: number, message: string) {
+      super(message);
+      this.name = 'APIError';
+      this.status = status;
+      this.headers = {};
+    }
+  }
+
+  return { createMock, MockAPIError };
+});
+
 vi.mock('@anthropic-ai/sdk', () => {
-  const createMock = vi.fn().mockResolvedValue({
-    content: [{ type: 'text', text: '{"score": 3, "reasoning": "Competent content", "suggestions": ["Add more examples"]}' }],
-  });
   return {
     default: class MockAnthropic {
       messages = { create: createMock };
+      static APIError = MockAPIError;
     },
   };
 });
 
 import { createJudge } from '../src/judge.js';
+
+const OK_RESPONSE = {
+  content: [{ type: 'text', text: '{"score": 3, "reasoning": "Competent content", "suggestions": ["Add more examples"]}' }],
+};
 
 const testRubric: JudgeRubric = {
   criterion: 'Test Criterion',
@@ -26,6 +44,11 @@ const testRubric: JudgeRubric = {
     { score: 5, label: 'Excellent', description: 'Outstanding' },
   ],
 };
+
+beforeEach(() => {
+  createMock.mockReset();
+  createMock.mockResolvedValue(OK_RESPONSE);
+});
 
 describe('createJudge', () => {
   it('returns a judge with a score method', () => {
@@ -55,12 +78,9 @@ describe('createJudge', () => {
   });
 
   it('defaults suggestions to empty array when missing from response', async () => {
-    // Override the mock for this test to return no suggestions
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const instance = new Anthropic({ apiKey: 'test' });
-    vi.mocked(instance.messages.create).mockResolvedValueOnce({
+    createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '{"score": 4, "reasoning": "Strong content"}' }],
-    } as any);
+    });
 
     const judge = createJudge({ apiKey: 'test-key' });
     const result = await judge.score('Some content', testRubric);
@@ -69,15 +89,119 @@ describe('createJudge', () => {
   });
 
   it('filters out non-string suggestions', async () => {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const instance = new Anthropic({ apiKey: 'test' });
-    vi.mocked(instance.messages.create).mockResolvedValueOnce({
+    createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '{"score": 2, "reasoning": "Weak", "suggestions": ["Fix this", 42, null]}' }],
-    } as any);
+    });
 
     const judge = createJudge({ apiKey: 'test-key' });
     const result = await judge.score('Some content', testRubric);
 
     expect(result.suggestions).toEqual(['Fix this']);
+  });
+});
+
+describe('retry logic', () => {
+  const retryOpts = { apiKey: 'test-key', retries: 2, initialDelayMs: 0 };
+
+  it('retries on rate limit (429) and succeeds', async () => {
+    createMock
+      .mockRejectedValueOnce(new MockAPIError(429, 'Rate limited'))
+      .mockResolvedValueOnce(OK_RESPONSE);
+
+    const judge = createJudge(retryOpts);
+    const result = await judge.score('Some content', testRubric);
+
+    expect(result.score).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries on server error (500) and succeeds', async () => {
+    createMock
+      .mockRejectedValueOnce(new MockAPIError(500, 'Internal server error'))
+      .mockResolvedValueOnce(OK_RESPONSE);
+
+    const judge = createJudge(retryOpts);
+    const result = await judge.score('Some content', testRubric);
+
+    expect(result.score).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries on overloaded (529) and succeeds', async () => {
+    createMock
+      .mockRejectedValueOnce(new MockAPIError(529, 'Overloaded'))
+      .mockResolvedValueOnce(OK_RESPONSE);
+
+    const judge = createJudge(retryOpts);
+    const result = await judge.score('Some content', testRubric);
+
+    expect(result.score).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry on auth error (401)', async () => {
+    createMock.mockRejectedValueOnce(new MockAPIError(401, 'Unauthorized'));
+
+    const judge = createJudge({ ...retryOpts, retries: 3 });
+    await expect(judge.score('Some content', testRubric)).rejects.toThrow('Unauthorized');
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry on bad request (400)', async () => {
+    createMock.mockRejectedValueOnce(new MockAPIError(400, 'Bad request'));
+
+    const judge = createJudge({ ...retryOpts, retries: 3 });
+    await expect(judge.score('Some content', testRubric)).rejects.toThrow('Bad request');
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws after exhausting all retries', async () => {
+    createMock
+      .mockRejectedValueOnce(new MockAPIError(429, 'Rate limited'))
+      .mockRejectedValueOnce(new MockAPIError(429, 'Rate limited'))
+      .mockRejectedValueOnce(new MockAPIError(429, 'Rate limited'));
+
+    const judge = createJudge(retryOpts);
+    await expect(judge.score('Some content', testRubric)).rejects.toThrow('Rate limited');
+
+    // initial + 2 retries = 3 calls
+    expect(createMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries on network errors', async () => {
+    const networkError = Object.assign(new Error('connect ECONNRESET'), { code: 'ECONNRESET' });
+    createMock
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce(OK_RESPONSE);
+
+    const judge = createJudge(retryOpts);
+    const result = await judge.score('Some content', testRubric);
+
+    expect(result.score).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries multiple times before succeeding', async () => {
+    createMock
+      .mockRejectedValueOnce(new MockAPIError(503, 'Service unavailable'))
+      .mockRejectedValueOnce(new MockAPIError(503, 'Service unavailable'))
+      .mockResolvedValueOnce(OK_RESPONSE);
+
+    const judge = createJudge({ ...retryOpts, retries: 3 });
+    const result = await judge.score('Some content', testRubric);
+
+    expect(result.score).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('respects retries: 0 option (no retries)', async () => {
+    createMock.mockRejectedValueOnce(new MockAPIError(429, 'Rate limited'));
+
+    const judge = createJudge({ ...retryOpts, retries: 0 });
+    await expect(judge.score('Some content', testRubric)).rejects.toThrow('Rate limited');
+
+    expect(createMock).toHaveBeenCalledTimes(1);
   });
 });
