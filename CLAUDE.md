@@ -87,7 +87,9 @@ When recommending a bump, reference the current version in `package.json` and li
 
 ## Release Process
 
-Merging to main with a version bump in `package.json` triggers automatic publishing to npm and creates a GitHub release. On every version bump, draft release notes covering:
+Releases are driven by PR title prefixes. When a PR is merged to main with a `patch:`, `minor:`, or `major:` prefix, the publish workflow automatically bumps `package.json`, publishes to npm, and creates a GitHub release. PRs without a prefix are merged without publishing.
+
+When recommending a PR title, use the format: `<level>: <description>` (e.g., `minor: add retry logic to judge`). On every version bump, draft release notes covering:
 
 1. **What changed** — list each user-facing change (new features, bug fixes, improvements)
 2. **Why it matters** — one sentence per item explaining the benefit
