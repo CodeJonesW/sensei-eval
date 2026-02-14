@@ -44,7 +44,12 @@ export function createJudge(opts) {
                 system: JUDGE_SYSTEM_PROMPT,
                 messages: [{ role: 'user', content: userPrompt }],
             });
-            const text = response.content[0].type === 'text' ? response.content[0].text : '';
+            let text = response.content[0].type === 'text' ? response.content[0].text : '';
+            // Strip markdown code fences if the model wraps its JSON response
+            text = text.trim();
+            if (text.startsWith('```')) {
+                text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+            }
             const parsed = JSON.parse(text);
             if (typeof parsed.score !== 'number' ||
                 typeof parsed.reasoning !== 'string') {

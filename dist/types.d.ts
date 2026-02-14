@@ -66,4 +66,63 @@ export interface JudgeRubric {
         description: string;
     }[];
 }
+/** A prompt entry for CLI evaluation */
+export interface PromptEntry {
+    name: string;
+    content: string;
+    contentType: string;
+    topic?: string;
+    difficulty?: string;
+    previousContent?: string[];
+    metadata?: Record<string, unknown>;
+}
+/** Configuration for the sensei-eval CLI */
+export interface SenseiEvalConfig {
+    prompts: PromptEntry[];
+    criteria?: EvalCriterion[];
+    model?: string;
+}
+/** A single entry in a baseline file */
+export interface BaselineEntry {
+    name: string;
+    contentType: string;
+    overallScore: number;
+    scores: Record<string, number>;
+    evaluatedAt: string;
+}
+/** The committed baseline file format */
+export interface BaselineFile {
+    version: 1;
+    generatedAt: string;
+    mode: 'full' | 'quick';
+    entries: BaselineEntry[];
+}
+/** Comparison result for a single prompt */
+export interface PromptCompareResult {
+    name: string;
+    contentType: string;
+    currentScore: number;
+    baselineScore: number | null;
+    delta: number;
+    regressed: boolean;
+    newPrompt: boolean;
+    criteriaDeltas: {
+        criterion: string;
+        current: number;
+        baseline: number;
+        delta: number;
+    }[];
+}
+/** Aggregate comparison result */
+export interface CompareResult {
+    passed: boolean;
+    prompts: PromptCompareResult[];
+    summary: {
+        total: number;
+        regressed: number;
+        improved: number;
+        unchanged: number;
+        new: number;
+    };
+}
 //# sourceMappingURL=types.d.ts.map

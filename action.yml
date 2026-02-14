@@ -1,0 +1,111 @@
+name: 'sensei-eval'
+description: 'Evaluate AI-generated educational content and detect prompt quality regressions'
+author: 'Will Jones'
+
+inputs:
+  config:
+    description: 'Path to sensei-eval config file'
+    required: false
+    default: 'sensei-eval.config.ts'
+  baseline:
+    description: 'Path to baseline JSON file'
+    required: false
+    default: 'sensei-eval.baseline.json'
+  mode:
+    description: 'Evaluation mode: full (with LLM) or quick (deterministic only)'
+    required: false
+    default: 'full'
+  anthropic-api-key:
+    description: 'Anthropic API key for LLM evaluation'
+    required: false
+  model:
+    description: 'LLM model to use for evaluation'
+    required: false
+  threshold:
+    description: 'Regression threshold (score drop tolerance, default 0)'
+    required: false
+    default: '0'
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+
+outputs:
+  passed:
+    description: 'Whether the evaluation passed (true/false)'
+    value: ${{ steps.eval.outputs.passed }}
+  result:
+    description: 'JSON CompareResult object'
+    value: ${{ steps.eval.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install dependencies
+      shell: bash
+      run: npm install sensei-eval tsx
+
+    - name: Run sensei-eval compare
+      id: eval
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        ARGS="compare"
+        ARGS="$ARGS --config ${{ inputs.config }}"
+        ARGS="$ARGS --baseline ${{ inputs.baseline }}"
+        ARGS="$ARGS --threshold ${{ inputs.threshold }}"
+        ARGS="$ARGS --format text"
+
+        if [ "${{ inputs.mode }}" = "quick" ]; then
+          ARGS="$ARGS --quick"
+        fi
+
+        if [ -n "${{ inputs.model }}" ]; then
+          ARGS="$ARGS --model ${{ inputs.model }}"
+        fi
+
+        # Run and capture result
+        set +e
+        npx sensei-eval $ARGS
+        EXIT_CODE=$?
+        set -e
+
+        # Also capture JSON for output
+        JSON_RESULT=$(npx sensei-eval compare \
+          --config "${{ inputs.config }}" \
+          --baseline "${{ inputs.baseline }}" \
+          --threshold "${{ inputs.threshold }}" \
+          --format json \
+          $( [ "${{ inputs.mode }}" = "quick" ] && echo "--quick" ) \
+          $( [ -n "${{ inputs.model }}" ] && echo "--model ${{ inputs.model }}" ) \
+          2>/dev/null || echo '{}')
+
+        # Write markdown summary
+        npx sensei-eval compare \
+          --config "${{ inputs.config }}" \
+          --baseline "${{ inputs.baseline }}" \
+          --threshold "${{ inputs.threshold }}" \
+          --format markdown \
+          $( [ "${{ inputs.mode }}" = "quick" ] && echo "--quick" ) \
+          $( [ -n "${{ inputs.model }}" ] && echo "--model ${{ inputs.model }}" ) \
+          >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "passed=false" >> "$GITHUB_OUTPUT"
+        fi
+
+        # Escape JSON for output
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "result<<$EOF" >> "$GITHUB_OUTPUT"
+        echo "$JSON_RESULT" >> "$GITHUB_OUTPUT"
+        echo "$EOF" >> "$GITHUB_OUTPUT"
+
+        exit $EXIT_CODE

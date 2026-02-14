@@ -74,3 +74,13 @@ tests/
 2. Export an `EvalCriterion` object with `evaluate()` implementing the check
 3. Add it to the exported array at the bottom of the file
 4. Add tests — mock the Judge for LLM criteria, use fixtures for deterministic
+
+## Versioning
+
+This package follows [Semantic Versioning](https://semver.org/). After completing work, always review the changes made during the session and recommend an appropriate version bump before committing:
+
+- **Patch** (0.x.Y) — bug fixes, internal refactors, doc changes, test additions, dependency updates that don't affect the public API
+- **Minor** (0.X.0) — new features, new exports, new CLI commands, new options/flags — anything additive that doesn't break existing consumers
+- **Major** (X.0.0) — removed or renamed exports, changed function signatures, changed type shapes that existing consumers depend on, removed CLI commands/flags, breaking config format changes
+
+When recommending a bump, reference the current version in `package.json` and list the specific changes that justify the level. For pre-1.0 packages, minor bumps cover new features and patch bumps cover fixes — but still flag breaking changes clearly even though semver technically allows them under 0.x.

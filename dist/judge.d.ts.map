@@ -1,1 +1,1 @@
-{"version":3,"file":"judge.d.ts","sourceRoot":"","sources":["../src/judge.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,KAAK,EAAe,MAAM,YAAY,CAAC;AAkBrD,wBAAgB,WAAW,CAAC,IAAI,EAAE;IAChC,MAAM,EAAE,MAAM,CAAC;IACf,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB,GAAG,KAAK,CAyDR"}
+{"version":3,"file":"judge.d.ts","sourceRoot":"","sources":["../src/judge.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,KAAK,EAAe,MAAM,YAAY,CAAC;AAkBrD,wBAAgB,WAAW,CAAC,IAAI,EAAE;IAChC,MAAM,EAAE,MAAM,CAAC;IACf,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB,GAAG,KAAK,CA+DR"}
