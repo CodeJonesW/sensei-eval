@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-14T21:54:11.181Z",
+  "mode": "full",
+  "entries": [
+    {
+      "name": "neural-networks-lesson",
+      "contentType": "lesson",
+      "overallScore": 0.85,
+      "scores": {
+        "format_compliance": 1,
+        "length_compliance": 1,
+        "has_code_block": 1,
+        "has_structure": 1,
+        "engagement": 0.75,
+        "repetition_avoidance": 1,
+        "topic_accuracy": 0.75,
+        "pedagogical_structure": 0.75,
+        "code_quality": 0.75,
+        "progressive_difficulty": 0.75
+      },
+      "evaluatedAt": "2026-02-14T21:53:56.897Z"
+    },
+    {
+      "name": "lru-cache-challenge",
+      "contentType": "challenge",
+      "overallScore": 0.8026315789473685,
+      "scores": {
+        "format_compliance": 1,
+        "length_compliance": 1,
+        "has_code_block": 1,
+        "has_structure": 1,
+        "engagement": 0.25,
+        "repetition_avoidance": 1,
+        "problem_clarity": 0.75,
+        "difficulty_calibration": 0.75,
+        "hint_quality": 0.75,
+        "testability": 0.75
+      },
+      "evaluatedAt": "2026-02-14T21:54:02.363Z"
+    },
+    {
+      "name": "binary-search-review",
+      "contentType": "review",
+      "overallScore": 0.8461538461538461,
+      "scores": {
+        "format_compliance": 1,
+        "length_compliance": 1,
+        "brevity": 1,
+        "engagement": 0.25,
+        "repetition_avoidance": 1,
+        "actionability": 1,
+        "honesty": 0.75
+      },
+      "evaluatedAt": "2026-02-14T21:54:06.281Z"
+    },
+    {
+      "name": "closures-lesson",
+      "contentType": "lesson",
+      "overallScore": 0.6125,
+      "scores": {
+        "format_compliance": 1,
+        "length_compliance": 1,
+        "has_code_block": 1,
+        "has_structure": 1,
+        "engagement": 0.25,
+        "repetition_avoidance": 1,
+        "topic_accuracy": 0.5,
+        "pedagogical_structure": 0.25,
+        "code_quality": 0.5,
+        "progressive_difficulty": 0.25
+      },
+      "evaluatedAt": "2026-02-14T21:54:11.180Z"
+    }
+  ]
+}
