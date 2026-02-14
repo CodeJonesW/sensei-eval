@@ -70,7 +70,17 @@ jobs:
         name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          NOTES_FILE=$(mktemp)
+          if [ -n "$PR_BODY" ]; then
+            echo "$PR_BODY" > "$NOTES_FILE"
+          else
+            echo "No release notes provided." > "$NOTES_FILE"
+          fi
+
           gh release create "${{ steps.version.outputs.version }}" \
             --title "${{ steps.version.outputs.version }}" \
-            --generate-notes
+            --notes-file "$NOTES_FILE"
+
+          rm -f "$NOTES_FILE"
