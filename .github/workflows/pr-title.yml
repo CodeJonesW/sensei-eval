@@ -1,0 +1,26 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title format
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "PR title: $TITLE"
+
+          if echo "$TITLE" | grep -qiE '^(patch|minor|major):'; then
+            echo "Valid prefix found"
+          else
+            echo "::error::PR title must start with 'patch:', 'minor:', or 'major:'"
+            echo ""
+            echo "Examples:"
+            echo "  patch: fix typo in rubric description"
+            echo "  minor: add retry logic to judge"
+            echo "  major: redesign scoring API"
+            exit 1
+          fi

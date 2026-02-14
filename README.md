@@ -169,7 +169,7 @@ jobs:
   run: echo "Prompt quality regressed!"
 ```
 
-The action also writes a markdown summary table to the GitHub Actions job summary automatically.
+The action writes a markdown summary table to the GitHub Actions job summary automatically.
 
 ## How It Works
 
@@ -181,6 +181,8 @@ Content is evaluated through a two-tier system:
 `EvalRunner.evaluate()` filters criteria by `contentType`, runs deterministic checks in parallel, then runs LLM checks in parallel, computes a weighted overall score, and returns an `EvalResult`.
 
 `EvalRunner.quickCheck()` does the same but skips all LLM criteria (no API calls).
+
+LLM calls include automatic retry with exponential backoff for transient errors (429, 500, 502, 503, 529, network errors). Retries default to 3 attempts with 1s/2s/4s delays. Non-retryable errors (401, 400) throw immediately.
 
 ### Scoring
 
@@ -252,8 +254,10 @@ runner.getCriteria(contentType: string): EvalCriterion[]   // filter by type
 ```typescript
 const judge = createJudge({
   apiKey: string,
-  model?: string,      // default: 'claude-sonnet-4-20250514'
+  model?: string,           // default: 'claude-sonnet-4-20250514'
   maxTokens?: number,
+  retries?: number,         // default: 3 (set 0 to disable)
+  initialDelayMs?: number,  // default: 1000
 });
 ```
 
@@ -290,6 +294,7 @@ interface EvalResult {
   overallScore: number;             // weighted average (0-1)
   passed: boolean;                  // all criteria passed their thresholds
   scores: EvalScore[];
+  feedback: EvalFeedback;           // actionable feedback from evaluation
   contentType: string;
   evaluatedAt: string;              // ISO timestamp
 }
@@ -302,6 +307,12 @@ interface EvalScore {
   passed: boolean;
   reasoning: string;
   metadata?: Record<string, unknown>;
+}
+
+interface EvalFeedback {
+  failedCriteria: { criterion: string; reasoning: string; suggestions: string[] }[];
+  strengths: string[];
+  suggestions: string[];
 }
 
 interface PromptEntry {
@@ -325,58 +336,4 @@ interface CompareResult {
   prompts: PromptCompareResult[];
   summary: { total: number; regressed: number; improved: number; unchanged: number; new: number };
 }
-```
-
-## Adding a New Criterion
-
-1. Define a `JudgeRubric` with a 1-5 scale (if LLM) in the appropriate `src/criteria/*.ts`
-2. Export an `EvalCriterion` object with an `evaluate()` function
-3. Add it to the exported array at the bottom of the file
-4. Add tests — mock the `Judge` for LLM criteria, use fixtures for deterministic
-
-## Development
-
-```bash
-npm run build        # tsc -> dist/
-npm test             # vitest run (unit tests, no API calls)
-npm run test:watch   # vitest in watch mode
-```
-
-Tests mock all LLM calls — no Anthropic API key needed to run the test suite.
-
-## Project Structure
-
-```
-src/
-  index.ts              # public API
-  types.ts              # all interfaces
-  runner.ts             # EvalRunner orchestration
-  judge.ts              # Anthropic SDK wrapper
-  baseline.ts           # baseline comparison logic
-  criteria/
-    index.ts            # re-exports all criterion sets
-    universal.ts        # criteria for all content types
-    lesson.ts           # lesson-specific criteria
-    challenge.ts        # challenge-specific criteria
-    review.ts           # review-specific criteria
-  cli/
-    index.ts            # CLI entry point
-    args.ts             # argument parsing
-    config.ts           # config file loading
-    format.ts           # output formatting (text, json, markdown)
-    commands/
-      eval.ts           # eval command
-      baseline.ts       # baseline command
-      compare.ts        # compare command
-      shared.ts         # shared runner factory
-  utils/
-    markdown.ts         # markdown parsing helpers
-tests/
-  fixtures/             # good/bad lesson and challenge markdown
-  criteria/             # per-criterion tests
-  cli/                  # CLI tests (args, config, format)
-  baseline.test.ts      # baseline comparison tests
-  runner.test.ts        # orchestration tests
-  judge.test.ts         # judge tests
-action.yml              # GitHub Action definition
 ```

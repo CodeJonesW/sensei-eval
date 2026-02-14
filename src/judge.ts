@@ -17,14 +17,50 @@ You MUST respond with ONLY a JSON object in this exact format, no other text:
 
 For scores of 4-5, return an empty suggestions array. For scores of 1-3, provide 1-3 specific, actionable suggestions for improvement.`;
 
+const DEFAULT_RETRIES = 3;
+const INITIAL_DELAY_MS = 1000;
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 529]);
+
+function isRetryable(err: unknown): boolean {
+  if (err instanceof Anthropic.APIError) {
+    return RETRYABLE_STATUS_CODES.has(err.status);
+  }
+  // Network errors (ECONNRESET, ETIMEDOUT, etc.)
+  if (err instanceof Error && 'code' in err) {
+    return true;
+  }
+  return false;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries: number, baseDelay: number): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt === maxRetries || !isRetryable(err)) {
+        throw err;
+      }
+      const delay = baseDelay * 2 ** attempt;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
 export function createJudge(opts: {
   apiKey: string;
   model?: string;
   maxTokens?: number;
+  retries?: number;
+  initialDelayMs?: number;
 }): Judge {
   const client = new Anthropic({ apiKey: opts.apiKey });
   const model = opts.model ?? 'claude-sonnet-4-20250514';
   const maxTokens = opts.maxTokens ?? 750;
+  const retries = opts.retries ?? DEFAULT_RETRIES;
+  const initialDelayMs = opts.initialDelayMs ?? INITIAL_DELAY_MS;
 
   return {
     async score(content: string, rubric: JudgeRubric, context?: string) {
@@ -48,12 +84,17 @@ export function createJudge(opts: {
         .filter(Boolean)
         .join('\n');
 
-      const response = await client.messages.create({
-        model,
-        max_tokens: maxTokens,
-        system: JUDGE_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }],
-      });
+      const response = await withRetry(
+        () =>
+          client.messages.create({
+            model,
+            max_tokens: maxTokens,
+            system: JUDGE_SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        retries,
+        initialDelayMs,
+      );
 
       let text =
         response.content[0].type === 'text' ? response.content[0].text : '';
