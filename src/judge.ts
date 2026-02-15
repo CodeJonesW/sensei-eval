@@ -91,6 +91,16 @@ export function createJudge(opts: {
           .map((s) => `${s.score} — ${s.label}: ${s.description}`)
           .join('\n');
 
+        const examplesSection = rubric.examples?.length
+          ? [
+              '## Examples',
+              ...rubric.examples.map(
+                (ex) =>
+                  `### Example (Score: ${ex.score}/5)\nContent: "${ex.content}"\nReasoning: "${ex.reasoning}"`,
+              ),
+            ].join('\n\n')
+          : '';
+
         userPrompt = [
           `## Criterion: ${rubric.criterion}`,
           rubric.description,
@@ -98,6 +108,7 @@ export function createJudge(opts: {
           `## Scoring Scale`,
           scaleDescription,
           '',
+          examplesSection,
           context ? `## Additional Context\n${context}\n` : '',
           `## Content to Evaluate`,
           content,

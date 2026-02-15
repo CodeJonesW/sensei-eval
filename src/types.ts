@@ -66,6 +66,7 @@ export interface JudgeRubric {
   criterion: string;
   description: string;
   scale: { score: number; label: string; description: string }[];
+  examples?: { score: number; content: string; reasoning: string }[];
 }
 
 /** A prompt entry for CLI evaluation */

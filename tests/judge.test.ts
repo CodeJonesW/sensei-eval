@@ -100,6 +100,59 @@ describe('createJudge', () => {
   });
 });
 
+describe('few-shot examples', () => {
+  it('includes examples section in prompt when rubric has examples', async () => {
+    const rubricWithExamples: JudgeRubric = {
+      ...testRubric,
+      examples: [
+        { score: 3, content: 'A decent lesson on loops', reasoning: 'Covers basics but lacks depth' },
+      ],
+    };
+
+    const judge = createJudge({ apiKey: 'test-key' });
+    await judge.score('Some content', rubricWithExamples);
+
+    const callArgs = createMock.mock.calls[0][0];
+    const prompt = callArgs.messages[0].content as string;
+    expect(prompt).toContain('## Examples');
+    expect(prompt).toContain('### Example (Score: 3/5)');
+    expect(prompt).toContain('A decent lesson on loops');
+    expect(prompt).toContain('Covers basics but lacks depth');
+  });
+
+  it('omits examples section when rubric has no examples', async () => {
+    const judge = createJudge({ apiKey: 'test-key' });
+    await judge.score('Some content', testRubric);
+
+    const callArgs = createMock.mock.calls[0][0];
+    const prompt = callArgs.messages[0].content as string;
+    expect(prompt).not.toContain('## Examples');
+  });
+
+  it('formats multiple examples correctly', async () => {
+    const rubricWithExamples: JudgeRubric = {
+      ...testRubric,
+      examples: [
+        { score: 1, content: 'Empty lesson', reasoning: 'No real content provided' },
+        { score: 3, content: 'A basic lesson on arrays', reasoning: 'Functional but could use more examples' },
+        { score: 5, content: 'Comprehensive guide to recursion', reasoning: 'Excellent depth with clear examples' },
+      ],
+    };
+
+    const judge = createJudge({ apiKey: 'test-key' });
+    await judge.score('Some content', rubricWithExamples);
+
+    const callArgs = createMock.mock.calls[0][0];
+    const prompt = callArgs.messages[0].content as string;
+    expect(prompt).toContain('### Example (Score: 1/5)');
+    expect(prompt).toContain('### Example (Score: 3/5)');
+    expect(prompt).toContain('### Example (Score: 5/5)');
+    expect(prompt).toContain('Empty lesson');
+    expect(prompt).toContain('A basic lesson on arrays');
+    expect(prompt).toContain('Comprehensive guide to recursion');
+  });
+});
+
 describe('string rubric', () => {
   it('accepts a string rubric and returns score + reasoning', async () => {
     const judge = createJudge({ apiKey: 'test-key' });
