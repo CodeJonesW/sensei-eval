@@ -175,4 +175,94 @@ describe('compareResults', () => {
     expect(result.prompts).toHaveLength(0);
     expect(result.summary.total).toBe(0);
   });
+
+  it('detects regression when a single criterion drops even if overall score holds', () => {
+    // Overall score stays at 0.8, but topic_accuracy drops from 0.7 to 0.3
+    const current = new Map([
+      ['intro-lesson', makeResult({
+        overallScore: 0.8,
+        scores: [
+          { criterion: 'format_compliance', score: 0.9, rawScore: 0.9, maxScore: 1, passed: true, reasoning: 'Good' },
+          { criterion: 'topic_accuracy', score: 0.3, rawScore: 2.2, maxScore: 5, passed: false, reasoning: 'Bad' },
+        ],
+      })],
+      ['advanced-lesson', makeResult({ overallScore: 0.75 })],
+    ]);
+
+    const result = compareResults(current, baselineFile);
+
+    expect(result.passed).toBe(false);
+    expect(result.summary.regressed).toBe(1);
+    const regressed = result.prompts.find((p) => p.name === 'intro-lesson');
+    expect(regressed?.regressed).toBe(true);
+  });
+
+  it('counts criterionRegressions correctly', () => {
+    // Both criteria regress for intro-lesson
+    const current = new Map([
+      ['intro-lesson', makeResult({
+        overallScore: 0.5,
+        scores: [
+          { criterion: 'format_compliance', score: 0.5, rawScore: 0.5, maxScore: 1, passed: false, reasoning: 'Bad' },
+          { criterion: 'topic_accuracy', score: 0.3, rawScore: 2.2, maxScore: 5, passed: false, reasoning: 'Bad' },
+        ],
+      })],
+      ['advanced-lesson', makeResult({ overallScore: 0.75 })],
+    ]);
+
+    const result = compareResults(current, baselineFile);
+
+    expect(result.summary.criterionRegressions).toBe(2);
+  });
+
+  it('ignores missing criteria when detecting per-criterion regressions', () => {
+    // Baseline has both format_compliance and topic_accuracy
+    // Current run only has format_compliance (e.g. quick mode skips LLM criteria)
+    // topic_accuracy is absent — should NOT trigger regression
+    const current = new Map([
+      ['intro-lesson', makeResult({
+        overallScore: 1.0,
+        scores: [
+          { criterion: 'format_compliance', score: 1.0, rawScore: 1.0, maxScore: 1, passed: true, reasoning: 'Perfect' },
+        ],
+      })],
+      ['advanced-lesson', makeResult({
+        overallScore: 1.0,
+        scores: [
+          { criterion: 'format_compliance', score: 1.0, rawScore: 1.0, maxScore: 1, passed: true, reasoning: 'Perfect' },
+        ],
+      })],
+    ]);
+
+    const result = compareResults(current, baselineFile);
+
+    expect(result.passed).toBe(true);
+    expect(result.summary.regressed).toBe(0);
+    expect(result.summary.criterionRegressions).toBe(0);
+    // The delta for topic_accuracy should still be computed (for display) but not trigger regression
+    const prompt = result.prompts.find((p) => p.name === 'intro-lesson')!;
+    const topicDelta = prompt.criteriaDeltas.find((d) => d.criterion === 'topic_accuracy');
+    expect(topicDelta).toBeDefined();
+    expect(topicDelta!.delta).toBeCloseTo(-0.7);
+  });
+
+  it('does not flag criterion regression within threshold tolerance', () => {
+    // topic_accuracy drops by 0.02, but threshold is 0.05
+    const current = new Map([
+      ['intro-lesson', makeResult({
+        overallScore: 0.8,
+        scores: [
+          { criterion: 'format_compliance', score: 0.9, rawScore: 0.9, maxScore: 1, passed: true, reasoning: 'Good' },
+          { criterion: 'topic_accuracy', score: 0.68, rawScore: 3.7, maxScore: 5, passed: true, reasoning: 'OK' },
+        ],
+      })],
+      ['advanced-lesson', makeResult({ overallScore: 0.75 })],
+    ]);
+
+    const result = compareResults(current, baselineFile, 0.05);
+
+    expect(result.passed).toBe(true);
+    expect(result.summary.regressed).toBe(0);
+    expect(result.summary.criterionRegressions).toBe(0);
+  });
 });

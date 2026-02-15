@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CliArgs } from '../args.js';
-import type { BaselineFile, EvalResult, SenseiEvalConfig } from '../../types.js';
+import type { BaselineFile, SenseiEvalConfig } from '../../types.js';
 import { compareResults } from '../../baseline.js';
-import { createRunner } from './shared.js';
+import { createRunner, evaluatePrompts } from './shared.js';
 import { formatCompareText, formatCompareMarkdown } from '../format.js';
 
 export async function runCompare(args: CliArgs, config: SenseiEvalConfig): Promise<void> {
@@ -16,24 +16,7 @@ export async function runCompare(args: CliArgs, config: SenseiEvalConfig): Promi
 
   const baselineFile = JSON.parse(readFileSync(baselinePath, 'utf-8')) as BaselineFile;
   const runner = createRunner(args, config);
-  const results = new Map<string, EvalResult>();
-
-  for (const prompt of config.prompts) {
-    const input = {
-      content: prompt.content,
-      contentType: prompt.contentType,
-      topic: prompt.topic,
-      difficulty: prompt.difficulty,
-      previousContent: prompt.previousContent,
-      metadata: prompt.metadata,
-    };
-
-    const result = args.quick
-      ? await runner.quickCheck(input)
-      : await runner.evaluate(input);
-
-    results.set(prompt.name, result);
-  }
+  const results = await evaluatePrompts(runner, config.prompts, args.quick);
 
   const comparison = compareResults(results, baselineFile, args.threshold);
 

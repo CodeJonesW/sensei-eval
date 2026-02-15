@@ -50,6 +50,7 @@ export function compareResults(
   let improved = 0;
   let unchanged = 0;
   let newCount = 0;
+  let criterionRegressionCount = 0;
 
   for (const [name, result] of current) {
     const base = baselineMap.get(name);
@@ -57,9 +58,9 @@ export function compareResults(
     const baselineScore = base?.overallScore ?? null;
     const delta = baselineScore !== null ? currentScore - baselineScore : 0;
     const isNew = base === undefined;
-    const isRegressed = !isNew && delta < -threshold;
 
     const criteriaDeltas: PromptCompareResult['criteriaDeltas'] = [];
+    const currentCriteriaNames = new Set(result.scores.map((s) => s.criterion));
     if (base) {
       const allCriteria = new Set([
         ...Object.keys(base.scores),
@@ -76,6 +77,17 @@ export function compareResults(
           delta: currentCriterionScore - baselineCriterionScore,
         });
       }
+    }
+
+    // Only count criterion regressions for criteria that were actually evaluated
+    // in the current run. Criteria only in the baseline (e.g. LLM criteria during
+    // a quick run) should not trigger false regressions.
+    const evaluatedDeltas = criteriaDeltas.filter((d) => currentCriteriaNames.has(d.criterion));
+    const hasCriterionRegression = evaluatedDeltas.some((d) => d.delta < -threshold);
+    const isRegressed = !isNew && (delta < -threshold || hasCriterionRegression);
+
+    if (hasCriterionRegression) {
+      criterionRegressionCount += evaluatedDeltas.filter((d) => d.delta < -threshold).length;
     }
 
     if (isNew) newCount++;
@@ -104,6 +116,7 @@ export function compareResults(
       improved,
       unchanged,
       new: newCount,
+      criterionRegressions: criterionRegressionCount,
     },
   };
 }
