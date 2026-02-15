@@ -49,11 +49,14 @@ export interface EvalResult {
   evaluatedAt: string;
 }
 
+/** A rubric can be a full structured rubric or a simple assertion string */
+export type Rubric = JudgeRubric | string;
+
 /** LLM judge interface — abstracts the model call */
 export interface Judge {
   score: (
     content: string,
-    rubric: JudgeRubric,
+    rubric: Rubric,
     context?: string,
   ) => Promise<{ score: number; reasoning: string; suggestions?: string[] }>;
 }

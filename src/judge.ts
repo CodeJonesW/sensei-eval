@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { Judge, JudgeRubric } from './types.js';
+import type { Judge, Rubric } from './types.js';
 
 const JUDGE_SYSTEM_PROMPT = `You are an expert evaluator of educational content. You score content against a specific rubric criterion.
 
@@ -63,26 +63,50 @@ export function createJudge(opts: {
   const initialDelayMs = opts.initialDelayMs ?? INITIAL_DELAY_MS;
 
   return {
-    async score(content: string, rubric: JudgeRubric, context?: string) {
-      const scaleDescription = rubric.scale
-        .map((s) => `${s.score} — ${s.label}: ${s.description}`)
-        .join('\n');
+    async score(content: string, rubric: Rubric, context?: string) {
+      let userPrompt: string;
 
-      const userPrompt = [
-        `## Criterion: ${rubric.criterion}`,
-        rubric.description,
-        '',
-        `## Scoring Scale`,
-        scaleDescription,
-        '',
-        context ? `## Additional Context\n${context}\n` : '',
-        `## Content to Evaluate`,
-        content,
-        '',
-        `Score this content on the criterion above. Respond with ONLY a JSON object: {"score": <number>, "reasoning": "<brief explanation>", "suggestions": ["<actionable suggestion>", ...]}`,
-      ]
-        .filter(Boolean)
-        .join('\n');
+      if (typeof rubric === 'string') {
+        userPrompt = [
+          `## Assertion to Evaluate`,
+          rubric,
+          '',
+          `## Scoring Scale`,
+          `1 — Strongly disagree: The content clearly fails this assertion`,
+          `2 — Disagree: The content mostly fails this assertion`,
+          `3 — Neutral: The content partially meets this assertion`,
+          `4 — Agree: The content mostly meets this assertion`,
+          `5 — Strongly agree: The content clearly meets this assertion`,
+          '',
+          context ? `## Additional Context\n${context}\n` : '',
+          `## Content to Evaluate`,
+          content,
+          '',
+          `Score this content on the assertion above. Respond with ONLY a JSON object: {"score": <number>, "reasoning": "<brief explanation>", "suggestions": ["<actionable suggestion>", ...]}`,
+        ]
+          .filter(Boolean)
+          .join('\n');
+      } else {
+        const scaleDescription = rubric.scale
+          .map((s) => `${s.score} — ${s.label}: ${s.description}`)
+          .join('\n');
+
+        userPrompt = [
+          `## Criterion: ${rubric.criterion}`,
+          rubric.description,
+          '',
+          `## Scoring Scale`,
+          scaleDescription,
+          '',
+          context ? `## Additional Context\n${context}\n` : '',
+          `## Content to Evaluate`,
+          content,
+          '',
+          `Score this content on the criterion above. Respond with ONLY a JSON object: {"score": <number>, "reasoning": "<brief explanation>", "suggestions": ["<actionable suggestion>", ...]}`,
+        ]
+          .filter(Boolean)
+          .join('\n');
+      }
 
       const response = await withRetry(
         () =>

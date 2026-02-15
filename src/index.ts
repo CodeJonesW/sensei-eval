@@ -11,6 +11,7 @@ export type {
   EvalResult,
   Judge,
   JudgeRubric,
+  Rubric,
   PromptEntry,
   SenseiEvalConfig,
   BaselineEntry,
