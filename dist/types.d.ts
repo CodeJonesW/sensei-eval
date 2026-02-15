@@ -67,6 +67,11 @@ export interface JudgeRubric {
         label: string;
         description: string;
     }[];
+    examples?: {
+        score: number;
+        content: string;
+        reasoning: string;
+    }[];
 }
 /** A prompt entry for CLI evaluation */
 export interface PromptEntry {
