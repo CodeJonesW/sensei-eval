@@ -215,6 +215,37 @@ describe('compareResults', () => {
     expect(result.summary.criterionRegressions).toBe(2);
   });
 
+  it('ignores missing criteria when detecting per-criterion regressions', () => {
+    // Baseline has both format_compliance and topic_accuracy
+    // Current run only has format_compliance (e.g. quick mode skips LLM criteria)
+    // topic_accuracy is absent — should NOT trigger regression
+    const current = new Map([
+      ['intro-lesson', makeResult({
+        overallScore: 1.0,
+        scores: [
+          { criterion: 'format_compliance', score: 1.0, rawScore: 1.0, maxScore: 1, passed: true, reasoning: 'Perfect' },
+        ],
+      })],
+      ['advanced-lesson', makeResult({
+        overallScore: 1.0,
+        scores: [
+          { criterion: 'format_compliance', score: 1.0, rawScore: 1.0, maxScore: 1, passed: true, reasoning: 'Perfect' },
+        ],
+      })],
+    ]);
+
+    const result = compareResults(current, baselineFile);
+
+    expect(result.passed).toBe(true);
+    expect(result.summary.regressed).toBe(0);
+    expect(result.summary.criterionRegressions).toBe(0);
+    // The delta for topic_accuracy should still be computed (for display) but not trigger regression
+    const prompt = result.prompts.find((p) => p.name === 'intro-lesson')!;
+    const topicDelta = prompt.criteriaDeltas.find((d) => d.criterion === 'topic_accuracy');
+    expect(topicDelta).toBeDefined();
+    expect(topicDelta!.delta).toBeCloseTo(-0.7);
+  });
+
   it('does not flag criterion regression within threshold tolerance', () => {
     // topic_accuracy drops by 0.02, but threshold is 0.05
     const current = new Map([
