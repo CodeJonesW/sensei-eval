@@ -100,6 +100,64 @@ describe('createJudge', () => {
   });
 });
 
+describe('string rubric', () => {
+  it('accepts a string rubric and returns score + reasoning', async () => {
+    const judge = createJudge({ apiKey: 'test-key' });
+    const result = await judge.score('Some content', 'Content is engaging and well-paced');
+
+    expect(result.score).toBe(3);
+    expect(result.reasoning).toBe('Competent content');
+    expect(result.suggestions).toEqual(['Add more examples']);
+  });
+
+  it('builds prompt with default agreement scale', async () => {
+    const judge = createJudge({ apiKey: 'test-key' });
+    await judge.score('Some content', 'Content is engaging and well-paced');
+
+    const callArgs = createMock.mock.calls[0][0];
+    const prompt = callArgs.messages[0].content as string;
+    expect(prompt).toContain('## Assertion to Evaluate');
+    expect(prompt).toContain('Content is engaging and well-paced');
+    expect(prompt).toContain('Strongly disagree');
+    expect(prompt).toContain('Strongly agree');
+    expect(prompt).toContain('Score this content on the assertion above');
+  });
+
+  it('includes context when provided', async () => {
+    const judge = createJudge({ apiKey: 'test-key' });
+    await judge.score('Some content', 'Is not apologetic', 'Topic: JavaScript closures');
+
+    const callArgs = createMock.mock.calls[0][0];
+    const prompt = callArgs.messages[0].content as string;
+    expect(prompt).toContain('## Additional Context');
+    expect(prompt).toContain('Topic: JavaScript closures');
+  });
+
+  it('handles markdown-wrapped JSON response', async () => {
+    createMock.mockResolvedValueOnce({
+      content: [{ type: 'text', text: '```json\n{"score": 4, "reasoning": "Good content"}\n```' }],
+    });
+
+    const judge = createJudge({ apiKey: 'test-key' });
+    const result = await judge.score('Some content', 'Content is clear and concise');
+
+    expect(result.score).toBe(4);
+    expect(result.reasoning).toBe('Good content');
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('defaults suggestions to empty array when missing', async () => {
+    createMock.mockResolvedValueOnce({
+      content: [{ type: 'text', text: '{"score": 5, "reasoning": "Excellent"}' }],
+    });
+
+    const judge = createJudge({ apiKey: 'test-key' });
+    const result = await judge.score('Some content', 'Content is well-structured');
+
+    expect(result.suggestions).toEqual([]);
+  });
+});
+
 describe('retry logic', () => {
   const retryOpts = { apiKey: 'test-key', retries: 2, initialDelayMs: 0 };
 
