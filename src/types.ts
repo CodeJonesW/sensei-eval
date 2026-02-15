@@ -116,5 +116,5 @@ export interface PromptCompareResult {
 export interface CompareResult {
   passed: boolean;
   prompts: PromptCompareResult[];
-  summary: { total: number; regressed: number; improved: number; unchanged: number; new: number };
+  summary: { total: number; regressed: number; improved: number; unchanged: number; new: number; criterionRegressions: number };
 }

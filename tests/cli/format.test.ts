@@ -79,7 +79,7 @@ describe('formatCompareText', () => {
         criteriaDeltas: [],
       },
     ],
-    summary: { total: 2, regressed: 1, improved: 0, unchanged: 0, new: 1 },
+    summary: { total: 2, regressed: 1, improved: 0, unchanged: 0, new: 1, criterionRegressions: 1 },
   };
 
   it('shows summary counts', () => {
@@ -126,7 +126,7 @@ describe('formatCompareMarkdown', () => {
         criteriaDeltas: [],
       },
     ],
-    summary: { total: 1, regressed: 0, improved: 1, unchanged: 0, new: 0 },
+    summary: { total: 1, regressed: 0, improved: 1, unchanged: 0, new: 0, criterionRegressions: 0 },
   };
 
   it('produces markdown table', () => {

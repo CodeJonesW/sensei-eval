@@ -24,7 +24,11 @@ export function formatCompareText(result: CompareResult, verbose: boolean): stri
   const lines: string[] = [];
   const { summary } = result;
 
-  lines.push(`Comparison: ${summary.total} prompts — ${summary.regressed} regressed, ${summary.improved} improved, ${summary.unchanged} unchanged, ${summary.new} new`);
+  let summaryLine = `Comparison: ${summary.total} prompts — ${summary.regressed} regressed, ${summary.improved} improved, ${summary.unchanged} unchanged, ${summary.new} new`;
+  if (summary.criterionRegressions > 0) {
+    summaryLine += ` (${summary.criterionRegressions} criterion regression${summary.criterionRegressions === 1 ? '' : 's'})`;
+  }
+  lines.push(summaryLine);
   lines.push('');
 
   for (const p of result.prompts) {
@@ -38,7 +42,8 @@ export function formatCompareText(result: CompareResult, verbose: boolean): stri
 
     if (verbose && p.criteriaDeltas.length > 0) {
       for (const d of p.criteriaDeltas) {
-        lines.push(`       ${d.criterion}: ${(d.current * 100).toFixed(1)}% (${formatDelta(d.delta)})`);
+        const marker = d.delta < 0 ? ' <<' : '';
+        lines.push(`       ${d.criterion}: ${(d.current * 100).toFixed(1)}% (${formatDelta(d.delta)})${marker}`);
       }
     }
   }
@@ -56,7 +61,11 @@ export function formatCompareMarkdown(result: CompareResult): string {
 
   lines.push('## sensei-eval Results');
   lines.push('');
-  lines.push(`**${summary.total}** prompts evaluated — **${summary.regressed}** regressed, **${summary.improved}** improved, **${summary.unchanged}** unchanged, **${summary.new}** new`);
+  let mdSummary = `**${summary.total}** prompts evaluated — **${summary.regressed}** regressed, **${summary.improved}** improved, **${summary.unchanged}** unchanged, **${summary.new}** new`;
+  if (summary.criterionRegressions > 0) {
+    mdSummary += ` (**${summary.criterionRegressions}** criterion regression${summary.criterionRegressions === 1 ? '' : 's'})`;
+  }
+  lines.push(mdSummary);
   lines.push('');
   lines.push('| Prompt | Score | Baseline | Delta | Status |');
   lines.push('|--------|-------|----------|-------|--------|');

@@ -123,6 +123,7 @@ export interface CompareResult {
         improved: number;
         unchanged: number;
         new: number;
+        criterionRegressions: number;
     };
 }
 //# sourceMappingURL=types.d.ts.map

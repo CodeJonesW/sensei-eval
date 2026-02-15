@@ -50,6 +50,7 @@ export function compareResults(
   let improved = 0;
   let unchanged = 0;
   let newCount = 0;
+  let criterionRegressionCount = 0;
 
   for (const [name, result] of current) {
     const base = baselineMap.get(name);
@@ -57,7 +58,6 @@ export function compareResults(
     const baselineScore = base?.overallScore ?? null;
     const delta = baselineScore !== null ? currentScore - baselineScore : 0;
     const isNew = base === undefined;
-    const isRegressed = !isNew && delta < -threshold;
 
     const criteriaDeltas: PromptCompareResult['criteriaDeltas'] = [];
     if (base) {
@@ -76,6 +76,13 @@ export function compareResults(
           delta: currentCriterionScore - baselineCriterionScore,
         });
       }
+    }
+
+    const hasCriterionRegression = criteriaDeltas.some((d) => d.delta < -threshold);
+    const isRegressed = !isNew && (delta < -threshold || hasCriterionRegression);
+
+    if (hasCriterionRegression) {
+      criterionRegressionCount += criteriaDeltas.filter((d) => d.delta < -threshold).length;
     }
 
     if (isNew) newCount++;
@@ -104,6 +111,7 @@ export function compareResults(
       improved,
       unchanged,
       new: newCount,
+      criterionRegressions: criterionRegressionCount,
     },
   };
 }
