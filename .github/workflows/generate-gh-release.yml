@@ -19,6 +19,7 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: ${{ inputs.notes }}
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
 
@@ -27,11 +28,13 @@ jobs:
             exit 1
           fi
 
-          NOTES="${{ inputs.notes }}"
-          if [ -n "$NOTES" ]; then
+          if [ -n "$RELEASE_NOTES" ]; then
+            NOTES_FILE=$(mktemp)
+            printf '%s' "$RELEASE_NOTES" > "$NOTES_FILE"
             gh release create "$VERSION" \
               --title "$VERSION" \
-              --notes "$NOTES"
+              --notes-file "$NOTES_FILE"
+            rm -f "$NOTES_FILE"
           else
             gh release create "$VERSION" \
               --title "$VERSION" \
