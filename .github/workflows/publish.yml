@@ -89,13 +89,13 @@ jobs:
         name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_BODY: ${{ github.event.pull_request.body }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
           NOTES_FILE=$(mktemp)
-          BODY="${{ github.event.pull_request.body }}"
-          if [ -n "$BODY" ]; then
-            echo "$BODY" > "$NOTES_FILE"
+          if [ -n "$RELEASE_BODY" ]; then
+            printf '%s' "$RELEASE_BODY" > "$NOTES_FILE"
           fi
 
           if [ -s "$NOTES_FILE" ]; then
