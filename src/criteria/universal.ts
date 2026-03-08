@@ -13,6 +13,8 @@ const DEFAULT_LENGTH_LIMITS: Record<string, { min: number; max: number }> = {
   challenge: { min: 300, max: 4000 },
   quiz: { min: 200, max: 3000 },
   review: { min: 100, max: 2000 },
+  job: { min: 200, max: 4000 },
+  insight: { min: 300, max: 5000 },
 };
 
 const DEFAULT_LIMIT = { min: 200, max: 5000 };

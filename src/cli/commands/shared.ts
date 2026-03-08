@@ -11,6 +11,8 @@ export function createRunner(args: CliArgs, config: SenseiEvalConfig): EvalRunne
     ...allCriteria.lesson,
     ...allCriteria.challenge,
     ...allCriteria.review,
+    ...allCriteria.job,
+    ...allCriteria.insight,
   ];
 
   let judge = undefined;
