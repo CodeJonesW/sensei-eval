@@ -58,7 +58,7 @@ export const lengthCompliance: EvalCriterion = {
   async evaluate(input: EvalInput): Promise<EvalScore> {
     const limits =
       (input.metadata?.lengthLimits as { min: number; max: number }) ??
-      DEFAULT_LENGTH_LIMITS[input.contentType] ??
+      (input.contentType ? DEFAULT_LENGTH_LIMITS[input.contentType] : undefined) ??
       DEFAULT_LIMIT;
 
     const len = input.content.length;

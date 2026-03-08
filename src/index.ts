@@ -24,6 +24,7 @@ export type {
   EvalScore,
   EvalFeedback,
   EvalResult,
+  InlineRubric,
   Judge,
   JudgeRubric,
   Rubric,
