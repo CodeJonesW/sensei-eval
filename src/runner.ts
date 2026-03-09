@@ -1,4 +1,41 @@
-import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, Judge } from './types.js';
+import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, InlineRubric, Judge, JudgeRubric } from './types.js';
+
+/** Convert an InlineRubric into a full EvalCriterion for the runner */
+function rubricToCriterion(rubric: InlineRubric): EvalCriterion {
+  const judgeRubric: JudgeRubric = {
+    criterion: rubric.name,
+    description: rubric.description,
+    scale: rubric.scale,
+    examples: rubric.examples,
+  };
+
+  const threshold = rubric.threshold ?? 0.5;
+
+  return {
+    name: rubric.name,
+    description: rubric.description,
+    contentTypes: '*',
+    method: 'llm_judge',
+    threshold,
+    weight: rubric.weight ?? 1.0,
+    optional: rubric.optional ?? false,
+    async evaluate(input: EvalInput, judge?: Judge): Promise<EvalScore> {
+      if (!judge) throw new Error(`Judge required for rubric "${rubric.name}"`);
+      const context = input.topic ? `Topic: ${input.topic}` : undefined;
+      const result = await judge.score(input.content, judgeRubric, context);
+      const score = (result.score - 1) / 4;
+      return {
+        criterion: rubric.name,
+        score,
+        rawScore: result.score,
+        maxScore: 5,
+        passed: score >= threshold,
+        reasoning: result.reasoning,
+        suggestions: result.suggestions ?? [],
+      };
+    },
+  };
+}
 
 export class EvalRunner {
   private criteria: EvalCriterion[];
@@ -36,9 +73,33 @@ export class EvalRunner {
     }
   }
 
+  /** Resolve the full set of criteria for an input (registered + inline rubrics) */
+  private resolveCriteria(input: EvalInput): EvalCriterion[] {
+    let registered: EvalCriterion[] = [];
+
+    if (input.contentType) {
+      // Content type provided — get matching registered criteria
+      registered = this.getCriteria(input.contentType);
+    } else {
+      // No content type — only include universal (contentTypes: '*') registered criteria
+      registered = this.criteria.filter((c) => c.contentTypes === '*');
+    }
+
+    // Convert inline rubrics to criteria
+    const inline = (input.rubrics ?? []).map(rubricToCriterion);
+
+    return [...registered, ...inline];
+  }
+
   /** Run full evaluation (deterministic + LLM judge criteria) */
   async evaluate(input: EvalInput): Promise<EvalResult> {
-    const applicable = this.getCriteria(input.contentType);
+    const applicable = this.resolveCriteria(input);
+
+    if (applicable.length === 0) {
+      throw new Error(
+        'No criteria to evaluate. Provide a contentType, inline rubrics, or both.',
+      );
+    }
 
     const deterministic = applicable.filter((c) => c.method === 'deterministic');
     const llm = applicable.filter((c) => c.method === 'llm_judge');
@@ -66,7 +127,7 @@ export class EvalRunner {
 
   /** Run only deterministic checks (no API calls) */
   async quickCheck(input: EvalInput): Promise<EvalResult> {
-    const applicable = this.getCriteria(input.contentType).filter(
+    const applicable = this.resolveCriteria(input).filter(
       (c) => c.method === 'deterministic',
     );
 
@@ -80,7 +141,7 @@ export class EvalRunner {
   private buildResult(
     scores: EvalScore[],
     applicable: EvalCriterion[],
-    contentType: string,
+    contentType?: string,
   ): EvalResult {
     // Build weight map from applicable criteria
     const weightMap = new Map(applicable.map((c) => [c.name, c.weight]));

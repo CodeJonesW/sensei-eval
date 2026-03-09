@@ -1,11 +1,24 @@
 /** What the consumer provides for evaluation */
 export interface EvalInput {
   content: string;
-  contentType: string;
+  contentType?: string;
   topic?: string;
   difficulty?: string;
   previousContent?: string[];
   metadata?: Record<string, unknown>;
+  /** Inline rubrics evaluated by the LLM judge — no pre-registration needed */
+  rubrics?: InlineRubric[];
+}
+
+/** A rubric passed at eval time — the runner wraps it into an LLM judge criterion */
+export interface InlineRubric {
+  name: string;
+  description: string;
+  scale: { score: number; label: string; description: string }[];
+  examples?: { score: number; content: string; reasoning: string }[];
+  weight?: number;      // default 1.0
+  threshold?: number;   // default 0.5
+  optional?: boolean;   // default false
 }
 
 /** Definition of a single evaluation criterion */
@@ -45,7 +58,7 @@ export interface EvalResult {
   passed: boolean;
   scores: EvalScore[];
   feedback: EvalFeedback;
-  contentType: string;
+  contentType?: string;
   evaluatedAt: string;
 }
 
@@ -90,7 +103,7 @@ export interface SenseiEvalConfig {
 /** A single entry in a baseline file */
 export interface BaselineEntry {
   name: string;
-  contentType: string;
+  contentType?: string;
   overallScore: number;
   scores: Record<string, number>;
   evaluatedAt: string;
@@ -107,7 +120,7 @@ export interface BaselineFile {
 /** Comparison result for a single prompt */
 export interface PromptCompareResult {
   name: string;
-  contentType: string;
+  contentType?: string;
   currentScore: number;
   baselineScore: number | null;
   delta: number;
