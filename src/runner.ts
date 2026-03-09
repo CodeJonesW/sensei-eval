@@ -9,12 +9,14 @@ function rubricToCriterion(rubric: InlineRubric): EvalCriterion {
     examples: rubric.examples,
   };
 
+  const threshold = rubric.threshold ?? 0.5;
+
   return {
     name: rubric.name,
     description: rubric.description,
     contentTypes: '*',
     method: 'llm_judge',
-    threshold: rubric.threshold ?? 0.5,
+    threshold,
     weight: rubric.weight ?? 1.0,
     optional: rubric.optional ?? false,
     async evaluate(input: EvalInput, judge?: Judge): Promise<EvalScore> {
@@ -27,7 +29,7 @@ function rubricToCriterion(rubric: InlineRubric): EvalCriterion {
         score,
         rawScore: result.score,
         maxScore: 5,
-        passed: score >= (rubric.threshold ?? 0.5),
+        passed: score >= threshold,
         reasoning: result.reasoning,
         suggestions: result.suggestions ?? [],
       };
