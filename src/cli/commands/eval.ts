@@ -1,9 +1,9 @@
 import type { CliArgs } from '../args.js';
-import type { SenseiEvalConfig } from '../../types.js';
+import type { EvalConfig } from '../../types.js';
 import { createRunner, evaluatePrompts } from './shared.js';
 import { formatEvalText, formatEvalMarkdown } from '../format.js';
 
-export async function runEval(args: CliArgs, config: SenseiEvalConfig): Promise<void> {
+export async function runEval(args: CliArgs, config: EvalConfig): Promise<void> {
   const runner = createRunner(args, config);
   const results = await evaluatePrompts(runner, config.prompts, args.quick);
 

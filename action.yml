@@ -1,16 +1,16 @@
-name: 'sensei-eval'
-description: 'Evaluate AI-generated educational content and detect prompt quality regressions'
+name: 'ai-content-eval'
+description: 'Evaluate AI-generated content and detect prompt quality regressions'
 author: 'Will Jones'
 
 inputs:
   config:
-    description: 'Path to sensei-eval config file'
+    description: 'Path to ai-content-eval config file'
     required: false
-    default: 'sensei-eval.config.ts'
+    default: 'ai-content-eval.config.ts'
   baseline:
     description: 'Path to baseline JSON file'
     required: false
-    default: 'sensei-eval.baseline.json'
+    default: 'ai-content-eval.baseline.json'
   mode:
     description: 'Evaluation mode: full (with LLM) or quick (deterministic only)'
     required: false
@@ -48,9 +48,9 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: npm install sensei-eval tsx
+      run: npm install ai-content-eval tsx
 
-    - name: Run sensei-eval compare
+    - name: Run ai-content-eval compare
       id: eval
       shell: bash
       env:
@@ -76,7 +76,7 @@ runs:
         # Run evaluation once — prints text to logs, writes JSON to
         # result file, and writes markdown to GITHUB_STEP_SUMMARY
         set +e
-        npx sensei-eval $ARGS
+        npx ai-content-eval $ARGS
         EXIT_CODE=$?
         set -e
 

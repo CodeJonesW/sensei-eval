@@ -59,7 +59,7 @@ export function formatCompareMarkdown(result: CompareResult): string {
   const lines: string[] = [];
   const { summary } = result;
 
-  lines.push('## sensei-eval Results');
+  lines.push('## ai-content-eval Results');
   lines.push('');
   let mdSummary = `**${summary.total}** prompts evaluated — **${summary.regressed}** regressed, **${summary.improved}** improved, **${summary.unchanged}** unchanged, **${summary.new}** new`;
   if (summary.criterionRegressions > 0) {
@@ -87,7 +87,7 @@ export function formatCompareMarkdown(result: CompareResult): string {
 export function formatEvalMarkdown(results: Map<string, EvalResult>): string {
   const lines: string[] = [];
 
-  lines.push('## sensei-eval Results');
+  lines.push('## ai-content-eval Results');
   lines.push('');
   lines.push('| Prompt | Score | Status |');
   lines.push('|--------|-------|--------|');

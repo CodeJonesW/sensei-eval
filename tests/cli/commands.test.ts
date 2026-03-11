@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { CliArgs } from '../../src/cli/args.js';
-import type { EvalResult, SenseiEvalConfig, CompareResult, BaselineFile } from '../../src/types.js';
+import type { EvalResult, EvalConfig, CompareResult, BaselineFile } from '../../src/types.js';
 
 // Mock evaluatePrompts and createRunner from shared
 vi.mock('../../src/cli/commands/shared.js', () => ({
@@ -24,9 +24,9 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 function makeArgs(overrides: Partial<CliArgs> = {}): CliArgs {
   return {
     command: 'eval',
-    config: 'sensei-eval.config.ts',
-    baseline: 'sensei-eval.baseline.json',
-    output: 'sensei-eval.baseline.json',
+    config: 'ai-content-eval.config.ts',
+    baseline: 'ai-content-eval.baseline.json',
+    output: 'ai-content-eval.baseline.json',
     quick: false,
     apiKey: 'test-key',
     model: '',
@@ -52,7 +52,7 @@ function makeEvalResult(overrides: Partial<EvalResult> = {}): EvalResult {
   };
 }
 
-function makeConfig(): SenseiEvalConfig {
+function makeConfig(): EvalConfig {
   return {
     prompts: [
       { name: 'test-prompt', content: '# Test\n\nContent', contentType: 'lesson' },
@@ -99,7 +99,7 @@ describe('runEval', () => {
     await runEval(makeArgs({ format: 'markdown' }), makeConfig());
 
     const output = logSpy.mock.calls[0][0] as string;
-    expect(output).toContain('## sensei-eval Results');
+    expect(output).toContain('## ai-content-eval Results');
     expect(output).toContain('| Prompt |');
   });
 
@@ -221,7 +221,7 @@ describe('runCompare', () => {
     const calls = vi.mocked(writeFileSync).mock.calls;
     const summaryCall = calls.find(([path]) => path === '/tmp/gh-summary.md');
     expect(summaryCall).toBeDefined();
-    expect(summaryCall![1]).toContain('## sensei-eval Results');
+    expect(summaryCall![1]).toContain('## ai-content-eval Results');
   });
 
   it('writes to --result-file when specified', async () => {
@@ -260,7 +260,7 @@ describe('runCompare', () => {
     await runCompare(makeArgs({ command: 'compare', format: 'markdown' }), makeConfig());
 
     const output = logSpy.mock.calls[0][0] as string;
-    expect(output).toContain('## sensei-eval Results');
+    expect(output).toContain('## ai-content-eval Results');
     expect(output).toContain('| Prompt |');
   });
 });

@@ -1,16 +1,16 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CliArgs } from '../args.js';
-import type { BaselineFile, SenseiEvalConfig } from '../../types.js';
+import type { BaselineFile, EvalConfig } from '../../types.js';
 import { compareResults } from '../../baseline.js';
 import { createRunner, evaluatePrompts } from './shared.js';
 import { formatCompareText, formatCompareMarkdown } from '../format.js';
 
-export async function runCompare(args: CliArgs, config: SenseiEvalConfig): Promise<void> {
+export async function runCompare(args: CliArgs, config: EvalConfig): Promise<void> {
   const baselinePath = resolve(args.baseline);
   if (!existsSync(baselinePath)) {
     console.error(`Baseline file not found: ${baselinePath}`);
-    console.error('Run "sensei-eval baseline" first to generate one.');
+    console.error('Run "ai-content-eval baseline" first to generate one.');
     process.exit(1);
   }
 

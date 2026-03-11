@@ -29,7 +29,7 @@ export type {
   JudgeRubric,
   Rubric,
   PromptEntry,
-  SenseiEvalConfig,
+  EvalConfig,
   BaselineEntry,
   BaselineFile,
   PromptCompareResult,

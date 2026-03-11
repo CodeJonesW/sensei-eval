@@ -2,9 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { SenseiEvalConfig } from '../types.js';
+import type { EvalConfig } from '../types.js';
 
-export async function loadConfig(configPath: string): Promise<SenseiEvalConfig> {
+export async function loadConfig(configPath: string): Promise<EvalConfig> {
   const absolute = resolve(configPath);
 
   if (!existsSync(absolute)) {
@@ -12,7 +12,7 @@ export async function loadConfig(configPath: string): Promise<SenseiEvalConfig> 
   }
 
   const ext = absolute.split('.').pop() ?? '';
-  let config: SenseiEvalConfig;
+  let config: EvalConfig;
 
   if (ext === 'ts') {
     config = loadTsConfig(absolute);
@@ -26,7 +26,7 @@ export async function loadConfig(configPath: string): Promise<SenseiEvalConfig> 
   return config;
 }
 
-function loadTsConfig(absolute: string): SenseiEvalConfig {
+function loadTsConfig(absolute: string): EvalConfig {
   // Spawn tsx to evaluate the config file and print JSON to stdout
   const script = `
     import(process.argv[1]).then(m => {
@@ -44,7 +44,7 @@ function loadTsConfig(absolute: string): SenseiEvalConfig {
       timeout: 30_000,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    return JSON.parse(result) as SenseiEvalConfig;
+    return JSON.parse(result) as EvalConfig;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes('ENOENT') || msg.includes('not found')) {
@@ -56,13 +56,13 @@ function loadTsConfig(absolute: string): SenseiEvalConfig {
   }
 }
 
-async function loadJsConfig(absolute: string): Promise<SenseiEvalConfig> {
+async function loadJsConfig(absolute: string): Promise<EvalConfig> {
   const url = pathToFileURL(absolute).href;
-  const mod = (await import(url)) as { default?: SenseiEvalConfig } & SenseiEvalConfig;
+  const mod = (await import(url)) as { default?: EvalConfig } & EvalConfig;
   return mod.default ?? mod;
 }
 
-function validateConfig(config: unknown): asserts config is SenseiEvalConfig {
+function validateConfig(config: unknown): asserts config is EvalConfig {
   if (!config || typeof config !== 'object') {
     throw new Error('Config must export an object');
   }

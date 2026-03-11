@@ -1,10 +1,10 @@
 import type { CliArgs } from '../args.js';
-import type { EvalResult, PromptEntry, SenseiEvalConfig } from '../../types.js';
+import type { EvalResult, PromptEntry, EvalConfig } from '../../types.js';
 import { EvalRunner } from '../../runner.js';
 import { createJudge } from '../../judge.js';
 import * as allCriteria from '../../criteria/index.js';
 
-export function createRunner(args: CliArgs, config: SenseiEvalConfig): EvalRunner {
+export function createRunner(args: CliArgs, config: EvalConfig): EvalRunner {
   // Use config criteria if provided, otherwise default to all built-in criteria
   const criteria = config.criteria ?? [
     ...allCriteria.universal,

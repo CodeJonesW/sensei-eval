@@ -4,7 +4,7 @@ import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-const testDir = join(tmpdir(), 'sensei-eval-config-test-' + Date.now());
+const testDir = join(tmpdir(), 'ai-content-eval-config-test-' + Date.now());
 
 function setup() {
   mkdirSync(testDir, { recursive: true });
