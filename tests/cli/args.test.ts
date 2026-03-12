@@ -107,8 +107,8 @@ describe('parseArgs', () => {
 
   it('handles all defaults', () => {
     const args = parseArgs(['node', 'cli', 'eval']);
-    expect(args.config).toBe('sensei-eval.config.ts');
-    expect(args.baseline).toBe('sensei-eval.baseline.json');
+    expect(args.config).toBe('ai-content-eval.config.ts');
+    expect(args.baseline).toBe('ai-content-eval.baseline.json');
     expect(args.quick).toBe(false);
     expect(args.verbose).toBe(false);
     expect(args.format).toBe('text');

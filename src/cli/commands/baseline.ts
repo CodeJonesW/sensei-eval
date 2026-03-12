@@ -1,11 +1,11 @@
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CliArgs } from '../args.js';
-import type { SenseiEvalConfig } from '../../types.js';
+import type { EvalConfig } from '../../types.js';
 import { toBaselineEntry, createBaseline } from '../../baseline.js';
 import { createRunner, evaluatePrompts } from './shared.js';
 
-export async function runBaseline(args: CliArgs, config: SenseiEvalConfig): Promise<void> {
+export async function runBaseline(args: CliArgs, config: EvalConfig): Promise<void> {
   const runner = createRunner(args, config);
   const results = await evaluatePrompts(runner, config.prompts, args.quick);
 

@@ -23,8 +23,8 @@ export function parseArgs(argv: string[]): CliArgs {
 
   const defaults: CliArgs = {
     command,
-    config: 'sensei-eval.config.ts',
-    baseline: 'sensei-eval.baseline.json',
+    config: 'ai-content-eval.config.ts',
+    baseline: 'ai-content-eval.baseline.json',
     output: '',
     quick: false,
     apiKey: process.env.ANTHROPIC_API_KEY ?? '',
@@ -73,10 +73,10 @@ export function parseArgs(argv: string[]): CliArgs {
 }
 
 export function printHelp(): void {
-  console.log(`sensei-eval — Evaluate AI-generated educational content
+  console.log(`ai-content-eval — Evaluate AI-generated educational content
 
 Usage:
-  sensei-eval <command> [options]
+  ai-content-eval <command> [options]
 
 Commands:
   eval       Evaluate all prompts and print results
@@ -85,8 +85,8 @@ Commands:
   help       Show this help message
 
 Options:
-  -c, --config <path>     Config file (default: sensei-eval.config.ts)
-  -b, --baseline <path>   Baseline file (default: sensei-eval.baseline.json)
+  -c, --config <path>     Config file (default: ai-content-eval.config.ts)
+  -b, --baseline <path>   Baseline file (default: ai-content-eval.baseline.json)
   -o, --output <path>     Output file (default: same as baseline)
   -q, --quick             Skip LLM criteria (deterministic only)
   -f, --format <fmt>      Output format: text, json, markdown (default: text)

@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
-import type { SenseiEvalConfig } from './src/types.js';
+import type { EvalConfig } from './src/types.js';
 
 const fixture = (name: string) =>
   readFileSync(new URL(`tests/fixtures/${name}`, import.meta.url), 'utf-8');
 
-const config: SenseiEvalConfig = {
+const config: EvalConfig = {
   prompts: [
     {
       name: 'neural-networks-lesson',

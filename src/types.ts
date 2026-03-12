@@ -93,8 +93,8 @@ export interface PromptEntry {
   metadata?: Record<string, unknown>;
 }
 
-/** Configuration for the sensei-eval CLI */
-export interface SenseiEvalConfig {
+/** Configuration for the ai-content-eval CLI */
+export interface EvalConfig {
   prompts: PromptEntry[];
   criteria?: EvalCriterion[];
   model?: string;
