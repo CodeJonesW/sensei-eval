@@ -1,4 +1,4 @@
-import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, InlineRubric, Judge, JudgeRubric } from './types.js';
+import type { EvalCriterion, EvalFeedback, EvalInput, EvalResult, EvalScore, InlineRubric, Judge, JudgeRubric, JudgeUsage } from './types.js';
 
 /** Convert an InlineRubric into a full EvalCriterion for the runner */
 function rubricToCriterion(rubric: InlineRubric): EvalCriterion {
@@ -32,6 +32,7 @@ function rubricToCriterion(rubric: InlineRubric): EvalCriterion {
         passed: score >= threshold,
         reasoning: result.reasoning,
         suggestions: result.suggestions ?? [],
+        metadata: result.usage ? { usage: result.usage } : undefined,
       };
     },
   };
@@ -164,6 +165,7 @@ export class EvalRunner {
       .every((s) => s.passed);
 
     const feedback = this.buildFeedback(scores, applicable);
+    const usage = this.aggregateUsage(scores);
 
     return {
       overallScore,
@@ -172,7 +174,26 @@ export class EvalRunner {
       feedback,
       contentType,
       evaluatedAt: new Date().toISOString(),
+      ...(usage ? { usage } : {}),
     };
+  }
+
+  /** Aggregate token usage from all judge-scored criteria */
+  private aggregateUsage(scores: EvalScore[]): JudgeUsage | undefined {
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let hasUsage = false;
+
+    for (const score of scores) {
+      const usage = score.metadata?.usage as JudgeUsage | undefined;
+      if (usage) {
+        inputTokens += usage.input_tokens;
+        outputTokens += usage.output_tokens;
+        hasUsage = true;
+      }
+    }
+
+    return hasUsage ? { input_tokens: inputTokens, output_tokens: outputTokens } : undefined;
   }
 
   private buildFeedback(

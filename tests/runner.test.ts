@@ -223,7 +223,7 @@ describe('EvalRunner', () => {
 
     it('runs both deterministic and LLM criteria', async () => {
       const mockJudge: Judge = {
-        score: vi.fn().mockResolvedValue({ score: 4, reasoning: 'Good', suggestions: [] }),
+        score: vi.fn().mockResolvedValue({ score: 4, reasoning: 'Good', suggestions: [], usage: { input_tokens: 100, output_tokens: 30 } }),
       };
 
       const llmCriterion: EvalCriterion = {
@@ -261,6 +261,97 @@ describe('EvalRunner', () => {
       expect(result.scores.map((s) => s.criterion)).toContain('format_compliance');
       expect(result.scores.map((s) => s.criterion)).toContain('mock_llm');
       expect(result.feedback).toBeDefined();
+    });
+  });
+
+  describe('usage aggregation', () => {
+    it('aggregates token usage from LLM judge calls', async () => {
+      const mockJudge: Judge = {
+        score: vi.fn().mockResolvedValue({
+          score: 4,
+          reasoning: 'Good',
+          suggestions: [],
+          usage: { input_tokens: 100, output_tokens: 30 },
+        }),
+      };
+
+      const llmCriterion: EvalCriterion = {
+        name: 'mock_llm',
+        description: 'test',
+        contentTypes: '*',
+        method: 'llm_judge',
+        threshold: 0.5,
+        weight: 1.0,
+        async evaluate(input, judge) {
+          const result = await judge!.score(input.content, {
+            criterion: 'test',
+            description: 'test',
+            scale: [],
+          });
+          return {
+            criterion: 'mock_llm',
+            score: result.score / 5,
+            rawScore: result.score,
+            maxScore: 5,
+            passed: true,
+            reasoning: result.reasoning,
+            suggestions: result.suggestions ?? [],
+            metadata: result.usage ? { usage: result.usage } : undefined,
+          };
+        },
+      };
+
+      const runner = new EvalRunner({
+        criteria: [formatCompliance, llmCriterion],
+        judge: mockJudge,
+      });
+
+      const result = await runner.evaluate(makeInput('test content'));
+      expect(result.usage).toEqual({ input_tokens: 100, output_tokens: 30 });
+    });
+
+    it('omits usage when no judge calls are made', async () => {
+      const runner = new EvalRunner({
+        criteria: [formatCompliance],
+      });
+
+      const result = await runner.quickCheck(makeInput('clean content'));
+      expect(result.usage).toBeUndefined();
+    });
+
+    it('aggregates usage from inline rubrics', async () => {
+      const mockJudge: Judge = {
+        score: vi.fn().mockResolvedValue({
+          score: 3,
+          reasoning: 'OK',
+          suggestions: [],
+          usage: { input_tokens: 50, output_tokens: 15 },
+        }),
+      };
+
+      const runner = new EvalRunner({
+        criteria: [],
+        judge: mockJudge,
+      });
+
+      const result = await runner.evaluate({
+        content: 'test content',
+        rubrics: [
+          {
+            name: 'rubric_a',
+            description: 'test',
+            scale: [{ score: 1, label: 'Bad', description: 'bad' }, { score: 5, label: 'Good', description: 'good' }],
+          },
+          {
+            name: 'rubric_b',
+            description: 'test',
+            scale: [{ score: 1, label: 'Bad', description: 'bad' }, { score: 5, label: 'Good', description: 'good' }],
+          },
+        ],
+      });
+
+      // Two rubrics, each with 50 input + 15 output
+      expect(result.usage).toEqual({ input_tokens: 100, output_tokens: 30 });
     });
   });
 

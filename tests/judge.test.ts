@@ -31,6 +31,7 @@ import { createJudge } from '../src/judge.js';
 
 const OK_RESPONSE = {
   content: [{ type: 'text', text: '{"score": 3, "reasoning": "Competent content", "suggestions": ["Add more examples"]}' }],
+  usage: { input_tokens: 100, output_tokens: 25 },
 };
 
 const testRubric: JudgeRubric = {
@@ -56,13 +57,14 @@ describe('createJudge', () => {
     expect(judge.score).toBeTypeOf('function');
   });
 
-  it('parses JSON response and returns score + reasoning + suggestions', async () => {
+  it('parses JSON response and returns score + reasoning + suggestions + usage', async () => {
     const judge = createJudge({ apiKey: 'test-key' });
     const result = await judge.score('Some content', testRubric);
 
     expect(result.score).toBe(3);
     expect(result.reasoning).toBe('Competent content');
     expect(result.suggestions).toEqual(['Add more examples']);
+    expect(result.usage).toEqual({ input_tokens: 100, output_tokens: 25 });
   });
 
   it('passes context when provided', async () => {
@@ -80,6 +82,7 @@ describe('createJudge', () => {
   it('defaults suggestions to empty array when missing from response', async () => {
     createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '{"score": 4, "reasoning": "Strong content"}' }],
+      usage: { input_tokens: 80, output_tokens: 15 },
     });
 
     const judge = createJudge({ apiKey: 'test-key' });
@@ -91,6 +94,7 @@ describe('createJudge', () => {
   it('filters out non-string suggestions', async () => {
     createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '{"score": 2, "reasoning": "Weak", "suggestions": ["Fix this", 42, null]}' }],
+      usage: { input_tokens: 90, output_tokens: 20 },
     });
 
     const judge = createJudge({ apiKey: 'test-key' });
@@ -189,6 +193,7 @@ describe('string rubric', () => {
   it('handles markdown-wrapped JSON response', async () => {
     createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '```json\n{"score": 4, "reasoning": "Good content"}\n```' }],
+      usage: { input_tokens: 85, output_tokens: 18 },
     });
 
     const judge = createJudge({ apiKey: 'test-key' });
@@ -202,6 +207,7 @@ describe('string rubric', () => {
   it('defaults suggestions to empty array when missing', async () => {
     createMock.mockResolvedValueOnce({
       content: [{ type: 'text', text: '{"score": 5, "reasoning": "Excellent"}' }],
+      usage: { input_tokens: 75, output_tokens: 12 },
     });
 
     const judge = createJudge({ apiKey: 'test-key' });

@@ -57,7 +57,7 @@ export function createJudge(opts: {
   initialDelayMs?: number;
 }): Judge {
   const client = new Anthropic({ apiKey: opts.apiKey });
-  const model = opts.model ?? 'claude-sonnet-4-20250514';
+  const model = opts.model ?? 'claude-haiku-4-5-20251001';
   const maxTokens = opts.maxTokens ?? 750;
   const retries = opts.retries ?? DEFAULT_RETRIES;
   const initialDelayMs = opts.initialDelayMs ?? INITIAL_DELAY_MS;
@@ -157,7 +157,15 @@ export function createJudge(opts: {
         ? parsed.suggestions.filter((s): s is string => typeof s === 'string')
         : [];
 
-      return { score: parsed.score, reasoning: parsed.reasoning, suggestions };
+      return {
+        score: parsed.score,
+        reasoning: parsed.reasoning,
+        suggestions,
+        usage: {
+          input_tokens: response.usage.input_tokens,
+          output_tokens: response.usage.output_tokens,
+        },
+      };
     },
   };
 }
