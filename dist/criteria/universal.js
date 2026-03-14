@@ -4,6 +4,8 @@ const DEFAULT_LENGTH_LIMITS = {
     challenge: { min: 300, max: 4000 },
     quiz: { min: 200, max: 3000 },
     review: { min: 100, max: 2000 },
+    job: { min: 200, max: 4000 },
+    insight: { min: 300, max: 5000 },
 };
 const DEFAULT_LIMIT = { min: 200, max: 5000 };
 export const formatCompliance = {
@@ -45,7 +47,7 @@ export const lengthCompliance = {
     weight: 1.0,
     async evaluate(input) {
         const limits = input.metadata?.lengthLimits ??
-            DEFAULT_LENGTH_LIMITS[input.contentType] ??
+            (input.contentType ? DEFAULT_LENGTH_LIMITS[input.contentType] : undefined) ??
             DEFAULT_LIMIT;
         const len = input.content.length;
         const passed = len >= limits.min && len <= limits.max;
