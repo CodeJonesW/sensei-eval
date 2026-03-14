@@ -26,6 +26,8 @@ export type {
   EvalResult,
   InlineRubric,
   Judge,
+  JudgeScoreResult,
+  JudgeUsage,
   JudgeRubric,
   Rubric,
   PromptEntry,

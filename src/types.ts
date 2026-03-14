@@ -60,10 +60,26 @@ export interface EvalResult {
   feedback: EvalFeedback;
   contentType?: string;
   evaluatedAt: string;
+  /** Aggregate token usage across all judge calls (omitted when no judge was used) */
+  usage?: JudgeUsage;
 }
 
 /** A rubric can be a full structured rubric or a simple assertion string */
 export type Rubric = JudgeRubric | string;
+
+/** Token usage from a single judge call */
+export interface JudgeUsage {
+  input_tokens: number;
+  output_tokens: number;
+}
+
+/** Result from a single judge scoring call */
+export interface JudgeScoreResult {
+  score: number;
+  reasoning: string;
+  suggestions?: string[];
+  usage?: JudgeUsage;
+}
 
 /** LLM judge interface — abstracts the model call */
 export interface Judge {
@@ -71,7 +87,7 @@ export interface Judge {
     content: string,
     rubric: Rubric,
     context?: string,
-  ) => Promise<{ score: number; reasoning: string; suggestions?: string[] }>;
+  ) => Promise<JudgeScoreResult>;
 }
 
 /** Rubric for LLM-as-judge scoring */
