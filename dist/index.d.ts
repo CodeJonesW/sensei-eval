@@ -8,5 +8,5 @@ export { trim, lowercase, stripCodeBlocks, extractBetween, pipe } from './transf
 export type { Transform } from './transforms.js';
 export { contains, containsAll, containsAny, matchesRegex, containsJson, lengthBetween, startsWith, endsWith, } from './assertions.js';
 export type { Assertion, AssertionResult } from './assertions.js';
-export type { EvalInput, EvalCriterion, EvalScore, EvalFeedback, EvalResult, Judge, JudgeRubric, Rubric, PromptEntry, SenseiEvalConfig, BaselineEntry, BaselineFile, PromptCompareResult, CompareResult, } from './types.js';
+export type { EvalInput, EvalCriterion, EvalScore, EvalFeedback, EvalResult, InlineRubric, Judge, JudgeRubric, Rubric, PromptEntry, SenseiEvalConfig, BaselineEntry, BaselineFile, PromptCompareResult, CompareResult, } from './types.js';
 //# sourceMappingURL=index.d.ts.map
